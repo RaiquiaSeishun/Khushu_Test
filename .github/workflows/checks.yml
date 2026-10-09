@@ -137,7 +137,16 @@ jobs:
       - name: Verify an update preserves installed app data
         run: |
           set -euo pipefail
+          update_log="$RUNNER_TEMP/sukun-update-check.log"
+          exec > >(tee "$update_log") 2>&1
+          trap 'message=$(tail -35 "$update_log"); message=${message//%/%25}; message=${message//$'"'"'\n'"'"'/%0A}; echo "::error title=APK update check::$message"' ERR
           app_id=io.github.raiquiaseishun.sukun.debug
+          # UTP may remove its installations. Establish our own baseline and saved settings.
+          adb install -r app/build/outputs/apk/fdroid/debug/app-fdroid-universal-debug.apk
+          adb install -r app/build/outputs/apk/androidTest/fdroid/debug/app-fdroid-debug-androidTest.apk
+          adb shell am instrument -w -e class com.kaizen.khushu.AppIconInstrumentedTest \
+            "$app_id.test/androidx.test.runner.AndroidJUnitRunner" | tee "$RUNNER_TEMP/update-seed-tests.txt"
+          grep -F 'OK (2 tests)' "$RUNNER_TEMP/update-seed-tests.txt"
           adb shell am force-stop "$app_id"
           adb shell run-as "$app_id" sh -c '"echo sukun-update-preserved > files/update-check.txt"'
           adb exec-out run-as "$app_id" cat files/datastore/settings.preferences_pb > "$RUNNER_TEMP/settings-before.pb"
