@@ -2,9 +2,17 @@
 
 An unofficial, independently maintained fork of [Khushu by greykaizen](https://github.com/greykaizen/khushu), focused on prayer-time reliability, location accuracy, privacy, and data safety.
 
-Changes are AI-generated and reviewed with automated checks. This fork is not endorsed by the original developer. Original copyright notices and the [GPLv3 license](LICENSE) are preserved. The original project description and attribution remain in [the upstream README](docs/UPSTREAM_README.md).
+**All changes made for Sukun—including code and this README—are written entirely by AI and reviewed by AI.** Automated tests, builds, and lint provide additional checks. This disclosure applies to this fork's changes; the inherited Khushu code retains its original authorship and attribution.
+
+This fork is not endorsed by the original developer. Original copyright notices and the [GPLv3 license](LICENSE) are preserved. The original project description and attribution remain in [the upstream README](docs/UPSTREAM_README.md).
 
 Sukun uses an independently drawn ring mark and application ID `io.github.raiquiaseishun.sukun`. It can coexist with Khushu; its data is separate. It cannot update the original app signed by another key. The Kotlin namespace remains unchanged to reduce synchronization conflicts.
+
+## Why this fork exists
+
+I started Sukun after encountering issues with Khushu's Qibla finder and GPS/location behavior. I use AI to investigate and make changes because I don't know how to code. I do not personally review the code; code review is also performed by AI.
+
+I'm maintaining these changes independently rather than submitting them upstream. I don't know the original developer's perspective on AI-generated code, and I don't want to burden the maintainer with reviewing changes that I cannot personally review or assess.
 
 ## Development
 
