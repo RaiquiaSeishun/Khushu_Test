@@ -1,5 +1,17 @@
 # Validation evidence
 
+## Optional automatic GPS prayer-zone selection — 0.24.13
+
+[Run 37997628279](https://github.com/RaiquiaSeishun/Khushu_Test/actions/runs/37997628279) completed successfully on 2026-10-09 at application commit `0ed3d65b273aae3a1dc2b4e50f9d520d34d4ee5a`. Both-distribution build/JVM/lint checks, connected Android checks on API 30/35 and data-preserving APK update checks passed. Retained-key signing/verification and phone-artifact upload passed. The download has test version code 100015; the production baseline is 87 / 0.24.13.
+
+Local feature validation built both debug variants and the Android test APK, ran 31 JVM tests per variant with 0 failures/errors/skips, and reported 0 lint errors for both variants (existing warnings remain). The 8 added JVM regressions cover the community zone protocol/cache, uncertainty/border handling, unsupported special areas, provider state aliases, cancellation, invalid responses and exclusion of an unconfirmed automatic zone from official data/reminders. The two original placeholders remain distinguishable. Two new Android tests check persisted choices, new-fix invalidation and late-response rejection after a new fix, manual override, GPS disable or source change.
+
+The actual compiled client, using live HTTPS and public reference coordinates, selected KDH05 in Kulim, WLY01 in Kuala Lumpur and PNG01 in George Town after checking surrounding points. New clients restored all three results with networking blocked. A Genting Highlands reference point required manual selection rather than accepting the community map's broad district zone. These examples do not validate every Malaysian boundary or physical GPS accuracy. Automatic mode remains opt-in and explicitly identifies the community service, coordinate transmission and the need to verify the detected zone; JAKIM prayer entries remain a separate direct official download.
+
+[Download the GPS-zone update ZIP](https://github.com/RaiquiaSeishun/Khushu_Test/actions/runs/37997628279/artifacts/11647567747). Install it over the retained-key Sukun Test build. No new signing identity or application ID is introduced. APK source identity, checksum, public signer certificate and phone checklist are included. See [feature behavior and limitations](AUTOMATIC_PRAYER_ZONE.md).
+
+Evidence is retained outside the checkout in `/workspace/downloads/gps-zone-final-validation.log`, `/workspace/downloads/gps-zone-live-validation.log` and `/workspace/downloads/gps-zone-ci-validation.json`. Local full feature checks preceded the final permission guard; CI compiled and checked that final guard at the commit above. Documentation-only follow-ups do not modify application sources or workflow configuration.
+
 ## Retained test signing and APK updates
 
 On 2026-10-09, the owner reported successful execution of the signing setup script on macOS. [Run 37946015508](https://github.com/RaiquiaSeishun/Khushu_Test/actions/runs/37946015508) then completed successfully at application/workflow commit `822149b150db04926a227a3927a94eb2f20471d4`:
