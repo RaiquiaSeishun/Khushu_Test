@@ -683,15 +683,8 @@ fun HomeScreen(
                     }
                 }
 
-                uiState.prayerDataWarning?.let { warning ->
-                    item {
-                        Text(
-                            text = warning,
-                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-                    }
+                uiState.prayerDataNotice?.let { notice ->
+                    item { PrayerSourceCard(notice) }
                 }
 
                 item { Spacer(modifier = Modifier.height(14.dp)) }
@@ -915,5 +908,32 @@ fun HomeScreen(
                     }
                 }
         )
+    }
+}
+
+@Composable
+private fun PrayerSourceCard(notice: com.kaizen.khushu.data.repository.PrayerDataNotice) {
+    // Keep expanded details open across routine timetable refreshes.
+    var expanded by rememberSaveable { mutableStateOf(false) }
+    val colors = MaterialTheme.colorScheme
+    Surface(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 8.dp),
+        shape = RoundedCornerShape(20.dp),
+        color = if (notice.approximate) colors.tertiaryContainer else colors.surfaceContainer,
+        contentColor = if (notice.approximate) colors.onTertiaryContainer else colors.onSurface,
+    ) {
+        Column(Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+            Text(notice.title, style = MaterialTheme.typography.labelLarge)
+            Spacer(Modifier.height(4.dp))
+            Text(notice.summary, style = MaterialTheme.typography.bodySmall)
+            if (expanded) {
+                Spacer(Modifier.height(8.dp))
+                Text(notice.details, style = MaterialTheme.typography.bodySmall)
+            }
+            TextButton(
+                onClick = { expanded = !expanded },
+                contentPadding = PaddingValues(horizontal = 0.dp),
+            ) { Text(if (expanded) "Hide details" else "Details") }
+        }
     }
 }

@@ -252,17 +252,17 @@ class PrayerTimeRepository(
         if (settings.prayerSourceType == "JAKIM") jakim.get(date, settings.effectiveJakimZone, forceRefresh = true)
     }
 
-    suspend fun getPrayerDataNotice(date: Date, settings: UserSettings): String? {
-        if (settings.prayerSourceType != "JAKIM") return if (settings.prayerSourceType == "API") lastApiError
-            else if (!supportsLocalCalculationMethod(settings.prayerCalculationMethod))
-                "Selected convention needs internet. Using approximate Muslim World League times offline."
-            else null
-        val result = jakim.get(date, settings.effectiveJakimZone)
-        val adjusted = listOf(settings.fajrOffsetMinutes, settings.dhuhrOffsetMinutes, settings.asrOffsetMinutes,
-            settings.maghribOffsetMinutes, settings.ishaOffsetMinutes).any { it != 0 }
-        val zoneNotice = if (settings.automaticJakimZone) settings.automaticJakimZoneNotice
-            else "Zone selected manually; GPS does not change it."
-        return result.notice + " " + zoneNotice + if (adjusted && result.times != null) " Manual offsets are active; displayed times differ from the official entries." else ""
+    suspend fun getPrayerDataNotice(date: Date, settings: UserSettings): PrayerDataNotice? {
+        if (settings.prayerSourceType != "JAKIM") {
+            val detail = if (settings.prayerSourceType == "API") lastApiError
+                else if (!supportsLocalCalculationMethod(settings.prayerCalculationMethod))
+                    "Selected convention needs internet. Using approximate Muslim World League times offline."
+                else null
+            return detail?.let {
+                PrayerDataNotice("Approximate prayer times", "Using local calculations. Verify against your local timetable.", it, true)
+            }
+        }
+        return PrayerDataNotice.fromJakim(jakim.get(date, settings.effectiveJakimZone), settings)
     }
 
     suspend fun getFallbackPrayerTimes(

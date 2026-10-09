@@ -344,7 +344,7 @@ class HomeViewModel(
             locationLng = settings.locationLng,
             locationLabel = settings.locationLabel,
             calculationSource = if (settings.prayerSourceType == "JAKIM") CalculationSource.JAKIM else if (isApiSource) CalculationSource.API else CalculationSource.LOCAL,
-            prayerDataWarning = prayerTimeRepository.getPrayerDataNotice(effectiveDate, settings),
+            prayerDataNotice = prayerTimeRepository.getPrayerDataNotice(effectiveDate, settings),
             showExtraPrayerTimingsOnHome = settings.showExtraPrayerTimingsOnHome,
             showUpcomingEventsOnHome = settings.showUpcomingEventsOnHome
         )

@@ -40,3 +40,9 @@ Official JAKIM mode now uses the selected zone’s published entries. The separa
 
 
 See [the current feature notes](JAKIM_AND_ICONS.md) for the new test identity, cache behavior, validation scope, and signing limitations.
+
+### Prayer source status card
+
+The Home screen uses a compact source card rather than red error text for every notice. Official JAKIM data uses a neutral card. Approximate local times remain marked in the summary, including while GPS zone selection is pending. Tap **Details** to see the GPS lookup status, source/date/retrieval information, derived-night-time disclosure and any failure or adjustment explanation; tap **Hide details** to collapse it.
+
+On a phone, check both light and dark themes and large text: the summary must remain readable, Details must expand without truncation, and a pending GPS lookup must not simultaneously instruct you to select a manual zone. Verify that unavailable official data still says the displayed times are approximate, while valid cached official data is presented as source information.

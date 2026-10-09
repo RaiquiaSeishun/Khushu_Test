@@ -112,7 +112,7 @@ class JakimTimetableRepositoryTest {
             val repository = PrayerTimeRepository(null, OkHttpClient(), server.url("/aladhan").toString(), jakim)
             val unselected = settings().copy(jakimZone = "")
             assertFalse(repository.hasOfficialTimetable(date, unselected))
-            assertTrue(repository.getPrayerDataNotice(date, unselected)!!.contains("Choose an official"))
+            assertTrue(repository.getPrayerDataNotice(date, unselected)!!.summary.contains("Choose your prayer zone"))
             assertEquals(0, server.requestCount)
             val times = repository.getEffectivePrayerDateTimes(date, settings())
             assertEquals(5, times.size)
@@ -120,7 +120,7 @@ class JakimTimetableRepositoryTest {
             assertTrue(repository.hasOfficialTimetable(date, settings()))
             val adjusted = settings().copy(fajrOffsetMinutes = 3)
             assertEquals(times.getValue("Fajr").time + 180_000, repository.getEffectivePrayerDateTimes(date, adjusted).getValue("Fajr").time)
-            assertTrue(repository.getPrayerDataNotice(date, adjusted)!!.contains("Manual offsets"))
+            assertTrue(repository.getPrayerDataNotice(date, adjusted)!!.details.contains("Manual offsets"))
             assertEquals(1, server.requestCount)
             assertNotEquals(settings().toPrayerNotificationScheduleConfig(), settings().copy(jakimZone = "JHR02").toPrayerNotificationScheduleConfig())
             assertNotEquals(settings().toPrayerNotificationScheduleConfig(), settings().copy(lastPrayerRefreshEpochMs = 42).toPrayerNotificationScheduleConfig())
@@ -157,7 +157,7 @@ class JakimTimetableRepositoryTest {
             assertFalse(repository.hasOfficialTimetable(date, pending))
             assertEquals(repository.getEffectivePrayerDateTimes(date, pending.copy(prayerSourceType = "LOCAL")),
                 repository.getEffectivePrayerDateTimes(date, pending))
-            assertTrue(repository.getPrayerDataNotice(date, pending)!!.contains("Checking the prayer zone"))
+            assertTrue(repository.getPrayerDataNotice(date, pending)!!.details.contains("Checking the prayer zone"))
             assertEquals(0, server.requestCount)
             val confirmed = pending.copy(automaticJakimZoneConfirmed = true)
             assertNotEquals(pending.toPrayerNotificationScheduleConfig(), confirmed.toPrayerNotificationScheduleConfig())
@@ -167,4 +167,34 @@ class JakimTimetableRepositoryTest {
             assertEquals("WLY01", pending.copy(automaticJakimZone = false).effectiveJakimZone)
         } finally { server.shutdown() }
     }
+    @Test fun sourceCardsDistinguishOfficialPendingAndUnavailableTimes() = runBlocking {
+        val server = MockWebServer(); server.start()
+        try {
+            server.enqueue(MockResponse().setBody(fixture()))
+            server.enqueue(MockResponse().setResponseCode(503))
+            val jakim = JakimTimetableRepository(null, OkHttpClient(), server.url("/official").toString())
+            val repository = PrayerTimeRepository(null, OkHttpClient(), server.url("/aladhan").toString(), jakim)
+            val official = repository.getPrayerDataNotice(date, settings())!!
+            assertFalse(official.approximate)
+            assertEquals("Official JAKIM times · WLY01", official.title)
+            val cached = repository.getPrayerDataNotice(date, settings())!!
+            assertFalse(cached.approximate)
+            assertTrue(cached.details.contains("Cached official"))
+            val adjusted = repository.getPrayerDataNotice(date, settings().copy(fajrOffsetMinutes = 3))!!
+            assertTrue(adjusted.summary.contains("adjustments"))
+            val pending = repository.getPrayerDataNotice(date, settings().copy(
+                automaticJakimZone = true, automaticJakimZoneConfirmed = false,
+                automaticJakimZoneNotice = "Checking the prayer zone for this GPS fix…"))!!
+            assertTrue(pending.approximate)
+            assertTrue(pending.summary.contains("approximate"))
+            assertFalse(pending.details.contains("Choose an official"))
+            assertTrue(pending.details.contains("Checking"))
+            val unavailable = repository.getPrayerDataNotice(date, settings().copy(jakimZone = "JHR02"))!!
+            assertTrue(unavailable.approximate)
+            assertTrue(unavailable.summary.contains("unavailable"))
+            assertTrue(unavailable.details.contains("JHR02"))
+            assertEquals(2, server.requestCount)
+        } finally { server.shutdown() }
+    }
+
 }
