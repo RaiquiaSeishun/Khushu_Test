@@ -141,6 +141,11 @@ class MainActivity : ComponentActivity() {
         }
 
         settingsRepository = SettingsRepository(applicationContext)
+        lifecycleScope.launch {
+            val savedStyle = settingsRepository.settingsFlow.first().logoStyle
+            runCatching { com.kaizen.khushu.util.AppIconManager.apply(this@MainActivity, savedStyle) }
+                .onFailure { android.util.Log.w("SukunIcon", "Unable to restore launcher icon", it) }
+        }
         settingsViewModel = ViewModelProvider(
             this, SettingsViewModel.factory(settingsRepository, applicationContext)
         )[SettingsViewModel::class.java]

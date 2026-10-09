@@ -311,17 +311,19 @@ class SettingsViewModel(
     }
 
     fun setLogoStyle(style: String) {
-        val current = settings.value.logoStyle
         viewModelScope.launch {
-            repository.updateLogoStyle(style)        // DataStore → instant in-app UI update
-            if (style != current) {
-                Toast.makeText(
-                    appContext,
-                    "Updating app icon. Sukun will restart momentarily...",
-                    Toast.LENGTH_SHORT,
-                ).show()
-                delay(1500L)
+            val previous = repository.settingsFlow.first().logoStyle
+            try {
                 AppIconManager.apply(appContext, style)
+                repository.updateLogoStyle(style)
+                Toast.makeText(appContext, "App icon updated. Your launcher may take a moment to refresh.", Toast.LENGTH_SHORT).show()
+            } catch (_: IllegalArgumentException) {
+                Toast.makeText(appContext, "Unable to change the app icon.", Toast.LENGTH_SHORT).show()
+            } catch (_: SecurityException) {
+                Toast.makeText(appContext, "Android did not allow the icon change.", Toast.LENGTH_SHORT).show()
+            } catch (_: java.io.IOException) {
+                runCatching { AppIconManager.apply(appContext, previous) }
+                Toast.makeText(appContext, "Unable to save the app icon selection.", Toast.LENGTH_SHORT).show()
             }
         }
     }

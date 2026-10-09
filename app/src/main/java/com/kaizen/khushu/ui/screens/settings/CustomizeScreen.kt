@@ -80,6 +80,11 @@ fun CustomizeScreen(
                         onSelect = { settingsViewModel.setLogoStyle(it) },
                     )
                 }
+                androidx.compose.material3.Text(
+                    text = "Your launcher may take a moment to refresh. Launcher themed icons can override these colors.",
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                )
             }
 
             Spacer(Modifier.height(32.dp))
