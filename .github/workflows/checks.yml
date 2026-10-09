@@ -135,6 +135,10 @@ jobs:
           adb shell settings put global animator_duration_scale 0
           bash gradlew -Dddmlib.getprop.timeout.sec=30 --max-workers=4 :app:connectedFdroidDebugAndroidTest
       - name: Verify an update preserves installed app data
+        env:
+          ANDROID_USER_HOME: ${{ runner.temp }}/sukun-android
+          ANDROID_EMULATOR_HOME: ${{ runner.temp }}/sukun-android
+          ANDROID_AVD_HOME: ${{ runner.temp }}/sukun-android/avd
         run: |
           set -euo pipefail
           update_log="$RUNNER_TEMP/sukun-update-check.log"

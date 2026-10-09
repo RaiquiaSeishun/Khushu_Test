@@ -14,6 +14,23 @@ bash scripts/setup-test-signing.sh
 
 The script verifies secret access, creates a 4096-bit RSA test key outside the checkout at `~/.local/share/sukun-signing/sukun-test.p12`, and uploads its encoding directly to the repository secret. An optional absolute path selects another secure location. Repeating it reuses the existing key rather than generating a replacement. If the secret already exists but the local key is missing, it refuses to generate a replacement. Back up that file securely. If moving computers, restore the same file before running the script again. Do not replace an existing secret using a freshly generated key.
 
+### macOS commands
+
+Install [Homebrew](https://brew.sh/) if needed, then open Terminal:
+
+```sh
+brew install gh git openjdk@21
+export PATH="$(brew --prefix openjdk@21)/bin:$PATH"
+gh auth login
+gh repo clone RaiquiaSeishun/Khushu_Test sukun-signing-setup
+cd sukun-signing-setup
+bash scripts/setup-test-signing.sh
+```
+
+During login, choose GitHub.com, HTTPS and browser login, using the repository owner's account. If you already cloned this setup directory, use that checkout and `git pull --ff-only` rather than cloning again. Existing signing secrets are left unchanged on repeat runs.
+
+To locate the backup file in Finder after successful setup, use `open "$HOME/.local/share/sukun-signing"`. Copy the key to secure backup storage; do not add it to the source checkout. Keep the original file for future setup runs.
+
 This debug identity uses the Android test alias/password (`androiddebugkey` / `android`). The password is conventional; the private key file and repository secret must remain private. It is not the production identity. Never paste the key or its base64 encoding into chat or commit it.
 
 After setup, open **Actions → Sukun checks → Run workflow → main**. A successful run includes the `sukun-phone-test` ZIP. Future APKs signed with this retained key and a newer version code can be installed as updates, preserving app data; on a computer use `adb install -r`.
