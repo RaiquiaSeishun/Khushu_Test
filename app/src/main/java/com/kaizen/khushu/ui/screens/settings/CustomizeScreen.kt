@@ -24,7 +24,6 @@ import com.kaizen.khushu.ui.components.KhushuLogoBadge
 @Composable
 fun CustomizeScreen(
     settingsViewModel: SettingsViewModel,
-    onNavigateSalah: () -> Unit,
     onNavigateTasbeeh: () -> Unit,
     onBack: () -> Unit
 ) {
@@ -51,16 +50,8 @@ fun CustomizeScreen(
             Spacer(Modifier.height(12.dp))
 
             SettingsGroup(
-                title = "Prayer experience",
-//                description = "Tune the guided prayer screen and tasbih counter behavior."
+                title = "Tasbih experience",
             ) {
-                SettingsMenuItem(
-                    title = "Pray Screen",
-                    subtitle = "Session controls, completion text, and layout editor",
-                    iconRes = com.kaizen.khushu.R.drawable.ic_salah,
-                    onClick = onNavigateSalah
-                )
-
                 SettingsMenuItem(
                     title = "Tasbih Screen",
                     subtitle = "Layout editor, bead style, and interaction behavior",

@@ -175,12 +175,11 @@ fun AppearanceSettingsScreen(
                     ) {
                         listOf(
                             "Home" to AppDestinations.HOME.route,
-                            "Pray" to AppDestinations.SALAH.route,
                             "Tasbih" to AppDestinations.TASBEEH.route,
                             "Study" to AppDestinations.LEARN.route
                         ).forEach { (label, route) ->
                             FilterChip(
-                                selected = settings.startupTab == route,
+                                selected = (AppDestinations.fromRoute(settings.startupTab) ?: AppDestinations.HOME).route == route,
                                 onClick = { viewModel.setStartupTab(route) },
                                 label = { Text(label, fontFamily = BeVietnamPro) }
                             )

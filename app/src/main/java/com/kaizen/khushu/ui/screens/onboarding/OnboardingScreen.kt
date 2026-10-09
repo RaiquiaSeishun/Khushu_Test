@@ -223,10 +223,10 @@ private fun PageEcosystem(offset: Float) {
 
         // Bento Grid with Staggered Parallax
         Row(modifier = Modifier.height(220.dp).fillMaxWidth()) {
-            // Box 1: Salah
+            // Box 1: Prayer times
             BentoCard(
-                title = "Salah Canvas",
-                subtitle = "Immersive tracking",
+                title = "Prayer Times",
+                subtitle = "Daily times & Qibla",
                 modifier = Modifier.weight(1f).fillMaxHeight().graphicsLayer { translationX = offset * 300f }
             )
             Spacer(modifier = Modifier.width(16.dp))

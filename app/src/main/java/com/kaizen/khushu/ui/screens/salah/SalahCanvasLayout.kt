@@ -5,6 +5,7 @@ import androidx.room.PrimaryKey
 import androidx.room.TypeConverters
 import com.kaizen.khushu.data.local.CanvasWidgetListConverter
 
+// Legacy table retained for non-destructive updates of the shared CanvasDatabase.
 @Entity(tableName = "salah_canvas_layouts")
 @TypeConverters(CanvasWidgetListConverter::class)
 data class SalahCanvasLayout(

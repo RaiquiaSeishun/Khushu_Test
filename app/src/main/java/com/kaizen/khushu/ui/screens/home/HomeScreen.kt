@@ -49,7 +49,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -70,6 +69,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -426,7 +426,6 @@ fun HomeScreen(
         hazeState: HazeState,
         contentPadding: PaddingValues,
         onSettingsClick: () -> Unit,
-        onPrayClick: () -> Unit,
         viewModel: HomeViewModel,
         modifier: Modifier = Modifier,
 ) {
@@ -534,24 +533,9 @@ fun HomeScreen(
         }
     }
 
-    val doneCount = doneStates.values.count { it }
     val locationLabel = uiState.locationLabel.ifBlank { "Your area" }
     val pullProgress = (pullOffsetPx / refreshThresholdPx).coerceIn(0f, 1f)
 
-    // Detect how much of the PrayerSlab (always the last LazyColumn item) is visible.
-    // When ≥80% is visible, reveal the EXPLORE quick-action row.
-    val slabVisibilityFraction by remember {
-        derivedStateOf {
-            val info = listState.layoutInfo
-            val lastItem = info.visibleItemsInfo.lastOrNull() ?: return@derivedStateOf 0f
-            if (lastItem.index != info.totalItemsCount - 1) return@derivedStateOf 0f
-            val viewportHeight = (info.viewportEndOffset - info.viewportStartOffset).toFloat()
-            if (viewportHeight <= 0f) return@derivedStateOf 0f
-            val offset = lastItem.offset.coerceAtLeast(0).toFloat()
-            ((viewportHeight - offset) / viewportHeight).coerceIn(0f, 1f)
-        }
-    }
-    val showSlabQuickActions = slabVisibilityFraction >= 0.8f
     val animatedPullOffsetPx by
             animateFloatAsState(
                     targetValue =
@@ -645,7 +629,7 @@ fun HomeScreen(
                     contentPadding =
                             PaddingValues(
                                     top = contentPadding.calculateTopPadding() + 22.dp,
-                                    bottom = 0.dp
+                                    bottom = contentPadding.calculateBottomPadding() + 16.dp
                             ),
                     modifier =
                             Modifier.fillMaxSize().graphicsLayer {
@@ -664,7 +648,7 @@ fun HomeScreen(
 
                     if (displayPrayers.isEmpty()) {
                         PrayerSunMergedCardShimmer(
-                            modifier = Modifier.padding(horizontal = 14.dp)
+                            modifier = Modifier.padding(horizontal = 14.dp).testTag("home-prayer-card")
                         )
                     } else {
                         PrayerSunMergedCard(
@@ -678,9 +662,24 @@ fun HomeScreen(
                             sunsetTime = sunsetTime,
                             locationLabel = locationLabel,
                             source = uiState.calculationSource,
-                            modifier = Modifier.padding(horizontal = 14.dp)
+                            modifier = Modifier.padding(horizontal = 14.dp).testTag("home-prayer-card")
                         )
                     }
+                }
+
+                item {
+                    QuickDirectoryRow(
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp).testTag("home-quick-actions"),
+                        onActionClick = { action ->
+                            if (action == HomeQuickAction.EVENTS && uiState.showUpcomingEventsOnHome) {
+                                // Card, shortcuts, optional source note, spacer, prayer list, events.
+                                val eventsIndex = if (uiState.prayerDataNotice == null) 4 else 5
+                                scope.launch { listState.animateScrollToItem(eventsIndex) }
+                            } else {
+                                selectedQuickAction = action
+                            }
+                        },
+                    )
                 }
 
                 uiState.prayerDataNotice?.let { notice ->
@@ -689,27 +688,13 @@ fun HomeScreen(
 
                 item { Spacer(modifier = Modifier.height(14.dp)) }
 
-                if (uiState.showUpcomingEventsOnHome) {
-                    item {
-                        EventsStrip(
-                                header = displayEventsHeader,
-                                events = displayEvents,
-                                calendarEvents = displayCalendarEvents
-                        )
-                    }
-
-                    item { Spacer(modifier = Modifier.height(14.dp)) }
-                }
-
                 item {
                     PrayerSlab(
                             prayers = displayPrayers,
                             extraTimings =
                                     if (uiState.showExtraPrayerTimingsOnHome) displayExtraTimings
                                     else emptyList(),
-                            activePrayerName = currentPrayer?.name,
                             doneStates = doneStates,
-                            onPrayClick = onPrayClick,
                             onToggleDoneAttempt = { name ->
                                 val prayers = displayPrayers.filterNot { it.isExtra }
                                 val tappedIndex = prayers.indexOfFirst { it.name == name }
@@ -735,7 +720,7 @@ fun HomeScreen(
                                                         result =
                                                                 PrayerToggleResult
                                                                         .REJECTED_TOO_EARLY,
-                                                        guidedPrayerName =
+                                                        suggestedPrayerName =
                                                                 prayers
                                                                         .firstOrNull {
                                                                             !(doneStates[it.name]
@@ -748,7 +733,7 @@ fun HomeScreen(
                                                         result =
                                                                 PrayerToggleResult
                                                                         .REJECTED_OUT_OF_ORDER,
-                                                        guidedPrayerName = nextCompletable
+                                                        suggestedPrayerName = nextCompletable
                                                 )
                                         else -> {
                                             doneStates =
@@ -760,30 +745,26 @@ fun HomeScreen(
                                     }
                                 }
                             },
-                            onQuickActionTap = { action ->
-                                when (action) {
-                                    HomeQuickAction.QIBLA -> {
-                                        selectedQuickAction = action
-                                    }
-                                    HomeQuickAction.MOSQUES -> selectedQuickAction = action
-                                    HomeQuickAction.EVENTS -> {
-                                        if (uiState.showUpcomingEventsOnHome) {
-                                            scope.launch { listState.animateScrollToItem(2) }
-                                        } else {
-                                            selectedQuickAction = action
-                                        }
-                                    }
-                                    else -> selectedQuickAction = action
-                                }
-                            },
                             //                    ayahText = uiState.ayahText,
                             ayahRef = uiState.ayahRef,
                             darkTheme = darkTheme,
-                            showQuickActions = showSlabQuickActions,
-                            bottomPadding = contentPadding.calculateBottomPadding(),
-                            modifier = Modifier.fillParentMaxHeight()
+                            modifier = Modifier.fillMaxWidth()
                     )
                 }
+                if (uiState.showUpcomingEventsOnHome) {
+                    item {
+                        Box(Modifier.testTag("home-events")) {
+                            EventsStrip(
+                                header = displayEventsHeader,
+                                events = displayEvents,
+                                calendarEvents = displayCalendarEvents,
+                            )
+                        }
+                    }
+
+                    item { Spacer(modifier = Modifier.height(14.dp)) }
+                }
+
             }
 
             KhushuPullRefreshIndicator(

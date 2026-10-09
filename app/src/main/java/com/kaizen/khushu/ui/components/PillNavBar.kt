@@ -40,6 +40,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.IntOffset
@@ -75,7 +76,7 @@ fun PillNavBar(
         )
 
         Box(
-            modifier = modifier
+            modifier = modifier.testTag("main-navigation")
                 .clip(PillShape)
                 .background(Color.Black.copy(alpha = 0.2f))
                 .border(

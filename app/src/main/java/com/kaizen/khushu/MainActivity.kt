@@ -48,7 +48,6 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.*
 import androidx.navigation.navArgument
 import com.kaizen.khushu.data.local.CanvasDatabase
-import com.kaizen.khushu.data.model.CanvasPreset
 import com.kaizen.khushu.data.repository.AudioRepository
 import com.kaizen.khushu.data.repository.IslamicEventsRepository
 import com.kaizen.khushu.data.repository.ReleaseNotesRepository
@@ -70,10 +69,6 @@ import com.kaizen.khushu.ui.screens.learn.LearnScreen
 import com.kaizen.khushu.ui.screens.learn.LearnSectionDetailScreen
 import com.kaizen.khushu.ui.screens.learn.LearnAudioViewModel
 import com.kaizen.khushu.ui.screens.learn.LearnReadingScreen
-import com.kaizen.khushu.ui.screens.salah.SalahCanvasScreen
-import com.kaizen.khushu.ui.screens.salah.SalahCanvasViewModel
-import com.kaizen.khushu.ui.screens.salah.SalahImmersiveScreen
-import com.kaizen.khushu.ui.screens.salah.SalahPickerScreen
 import com.kaizen.khushu.ui.screens.settings.*
 import com.kaizen.khushu.ui.screens.tasbeeh.*
 import com.kaizen.khushu.ui.theme.KhushuTheme
@@ -95,7 +90,6 @@ class MainActivity : ComponentActivity() {
     private lateinit var settingsRepository: SettingsRepository
     private lateinit var settingsViewModel: SettingsViewModel
     private lateinit var tasbeehViewModel: TasbeehViewModel
-    private lateinit var salahCanvasViewModel: SalahCanvasViewModel
     private lateinit var tasbeehCanvasViewModel: TasbeehCanvasViewModel
     private lateinit var learnAudioViewModel: LearnAudioViewModel
     private lateinit var quranViewModel: com.kaizen.khushu.ui.screens.quran.QuranViewModel
@@ -170,12 +164,6 @@ class MainActivity : ComponentActivity() {
                 TasbeehViewModel::class.java]
 
         val canvasDao = CanvasDatabase.getInstance(applicationContext).canvasDao()
-        salahCanvasViewModel =
-            ViewModelProvider(
-                this as ViewModelStoreOwner,
-                SalahCanvasViewModel.factory(canvasDao)
-            )[SalahCanvasViewModel::class.java]
-
         tasbeehCanvasViewModel =
             ViewModelProvider(
                 this as ViewModelStoreOwner,
@@ -255,7 +243,6 @@ class MainActivity : ComponentActivity() {
                     KhushuApp(
                         settingsViewModel = settingsViewModel,
                         tasbeehViewModel = tasbeehViewModel,
-                        salahCanvasViewModel = salahCanvasViewModel,
                         tasbeehCanvasViewModel = tasbeehCanvasViewModel,
                         learnAudioViewModel = learnAudioViewModel,
                         quranViewModel = quranViewModel,
@@ -291,7 +278,6 @@ class MainActivity : ComponentActivity() {
 private fun KhushuApp(
     settingsViewModel: SettingsViewModel,
     tasbeehViewModel: TasbeehViewModel,
-    salahCanvasViewModel: SalahCanvasViewModel,
     tasbeehCanvasViewModel: TasbeehCanvasViewModel,
     learnAudioViewModel: LearnAudioViewModel,
     quranViewModel: com.kaizen.khushu.ui.screens.quran.QuranViewModel,
@@ -321,7 +307,7 @@ private fun KhushuApp(
     SideEffect {
         activity?.isOnTasbeehImmersive = currentRoute?.startsWith("tasbeeh/immersive") == true
     }
-    val currentDestination = AppDestinations.fromRoute(currentRoute) ?: AppDestinations.SALAH
+    val currentDestination = AppDestinations.fromRoute(currentRoute) ?: AppDestinations.HOME
     val showDeveloperWelcome =
         !settings.developerWelcomeDismissed &&
             currentRoute != ONBOARDING_ROUTE &&
@@ -350,7 +336,7 @@ private fun KhushuApp(
 
     val startRoute = remember {
         val saved = settingsViewModel.settings.value.startupTab
-        AppDestinations.fromRoute(saved)?.route ?: AppDestinations.SALAH.route
+        AppDestinations.fromRoute(saved)?.route ?: AppDestinations.HOME.route
     }
     
     val onNavigateTab: (AppDestinations) -> Unit = { dest ->
@@ -385,7 +371,7 @@ private fun KhushuApp(
                             settingsViewModel = settingsViewModel,
                             onComplete = {
                                 settingsViewModel.setOnboardingCompleted(true)
-                                navController.navigate(AppDestinations.SALAH.route) {
+                                navController.navigate(AppDestinations.HOME.route) {
                                     popUpTo(ONBOARDING_ROUTE) { inclusive = true }
                                 }
                             }
@@ -403,24 +389,7 @@ private fun KhushuApp(
                             viewModel = homeViewModel,
                             hazeState = hazeState,
                             contentPadding = screenContentPadding,
-                            onSettingsClick = { showSettingsSheet = true },
-                            onPrayClick = { navController.navigate(AppDestinations.SALAH.route) }
-                        )
-                    }
-
-                    composable(
-                        route = AppDestinations.SALAH.route,
-                        enterTransition = { tabEnter() },
-                        exitTransition = { tabExit() },
-                        popEnterTransition = { tabEnter() },
-                        popExitTransition = { tabExit() },
-                    ) {
-                        SalahPickerScreen(
-                            onStartSalah = { rakats, presetId ->
-                                navController.navigate("salah/immersive/$rakats/${presetId ?: "signature"}")
-                            },
-                            onSettingsClick = { showSettingsSheet = true },
-                            hazeState = hazeState
+                            onSettingsClick = { showSettingsSheet = true }
                         )
                     }
 
@@ -740,29 +709,12 @@ private fun KhushuApp(
                     ) {
                         CustomizeScreen(
                             settingsViewModel = settingsViewModel,
-                            onNavigateSalah = { navController.navigate(CUSTOMIZE_SALAH_ROUTE) },
                             onNavigateTasbeeh = {
                                 navController.navigate(CUSTOMIZE_TASBEEH_ROUTE)
                             },
                             onBack = {
                                 navController.popBackStack()
                             }
-                        )
-                    }
-
-                    composable(
-                        route = CUSTOMIZE_SALAH_ROUTE,
-                        enterTransition = { subScreenEnter() },
-                        exitTransition = { subScreenExit() },
-                        popEnterTransition = { subScreenPopEnter() },
-                        popExitTransition = { subScreenPopExit() },
-                    ) {
-                        SalahCustomizeScreen(
-                            viewModel = settingsViewModel,
-                            onCustomizeLayout = { rakats ->
-                                navController.navigate("salah/canvas/$rakats")
-                            },
-                            onBack = { navController.popBackStack() }
                         )
                     }
 
@@ -807,62 +759,6 @@ private fun KhushuApp(
                                 onExit = { navController.popBackStack() },
                             )
                         }
-                    }
-
-                    composable(
-                        route = SALAH_IMMERSIVE_ROUTE,
-                        arguments = listOf(
-                            navArgument("rakats") { type = NavType.IntType },
-                            navArgument("presetId") { type = NavType.StringType }
-                        ),
-                        enterTransition = { subScreenEnter() },
-                        exitTransition = { subScreenExit() },
-                        popEnterTransition = { subScreenPopEnter() },
-                        popExitTransition = { subScreenPopExit() },
-                    ) { backStackEntry ->
-                        val rakats = backStackEntry.arguments?.getInt("rakats") ?: 2
-                        val presetId = backStackEntry.arguments?.getString("presetId") ?: "signature"
-                        
-                        val activeLayout by salahCanvasViewModel.layout.collectAsStateWithLifecycle()
-                        val currentCanvasPreset = CanvasPreset(
-                            id = "current",
-                            name = "Current Canvas",
-                            backgroundColor = activeLayout.backgroundColorInt,
-                            widgets = activeLayout.widgets,
-                            isDeletable = false
-                        )
-                        var finalPresetToRender = currentCanvasPreset
-                        if (presetId != "current") {
-                            val dbPreset by salahCanvasViewModel.getPresetFlow(presetId).collectAsStateWithLifecycle(initialValue = null)
-                            if (dbPreset != null) finalPresetToRender = dbPreset!!
-                        }
-
-                        SalahImmersiveScreen(
-                            targetRakats = rakats,
-                            preset = finalPresetToRender,
-                            showExitButton = settings.showExitButton,
-                            showCompletionText = settings.showCompletionText,
-                            completionText = settings.completionText.ifBlank { "الحمد لله" },
-                            onComplete = { navController.popBackStack() },
-                            onExit = { navController.popBackStack() }
-                        )
-                    }
-
-                    composable(
-                        route = SALAH_CANVAS_ROUTE,
-                        arguments = listOf(navArgument("rakats") { type = NavType.IntType }),
-                        enterTransition = { subScreenEnter() },
-                        exitTransition = { subScreenExit() },
-                        popEnterTransition = { subScreenPopEnter() },
-                        popExitTransition = { subScreenPopExit() },
-                    ) { backStackEntry ->
-                        val rakats = backStackEntry.arguments?.getInt("rakats") ?: 4
-                        SalahCanvasScreen(
-                            targetRakats = rakats,
-                            viewModel = salahCanvasViewModel,
-                            onSave = { navController.popBackStack() },
-                            onExit = { navController.popBackStack() }
-                        )
                     }
 
                     composable(

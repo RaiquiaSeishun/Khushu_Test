@@ -46,3 +46,9 @@ See [the current feature notes](JAKIM_AND_ICONS.md) for the new test identity, c
 The Home screen uses a compact source card rather than red error text for every notice. Official JAKIM data uses a neutral card. Approximate local times remain marked in the summary, including while GPS zone selection is pending. Tap **Details** to see the GPS lookup status, source/date/retrieval information, derived-night-time disclosure and any failure or adjustment explanation; tap **Hide details** to collapse it.
 
 On a phone, check both light and dark themes and large text: the summary must remain readable, Details must expand without truncation, and a pending GPS lookup must not simultaneously instruct you to select a manual zone. Verify that unavailable official data still says the displayed times are approximate, while valid cached official data is presented as source information.
+
+### Home and Guided Prayer removal
+
+Update over the existing app, including if **Pray** was previously the startup tab. Home should open instead, with no Pray navigation tab, session button, Guided Prayer picker or Pray Screen customization. Existing Tasbih collections, settings and icon choice should remain intact.
+
+On the initial Home view, check that the prayer-time card and **Qibla**, **Mosques** and **Events** shortcuts appear together without scrolling. Qibla should open the compass immediately. Mosques remains marked Soon. Events should jump to the events section when enabled, or explain how to enable it when hidden. A source-status card and upcoming events must not push the shortcuts below the initial view. Check normal portrait layout and large text; shorter landscape screens may still require scrolling.

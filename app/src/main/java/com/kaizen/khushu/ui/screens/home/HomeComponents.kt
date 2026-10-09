@@ -112,7 +112,7 @@ enum class PrayerToggleResult {
 
 data class PrayerToggleOutcome(
         val result: PrayerToggleResult,
-        val guidedPrayerName: String? = null,
+        val suggestedPrayerName: String? = null,
 )
 
 @Composable
@@ -3237,15 +3237,11 @@ fun EventsStrip(
 fun PrayerSlab(
         prayers: List<PrayerInfo>,
         extraTimings: List<PrayerInfo>,
-        activePrayerName: String?,
         doneStates: Map<String, Boolean>,
-        onPrayClick: () -> Unit,
         onToggleDoneAttempt: (String) -> PrayerToggleOutcome,
-        onQuickActionTap: (HomeQuickAction) -> Unit,
         //    ayahText: String,
         ayahRef: String,
         darkTheme: Boolean,
-        showQuickActions: Boolean = false,
         bottomPadding: androidx.compose.ui.unit.Dp = 0.dp,
         modifier: Modifier = Modifier
 ) {
@@ -3345,7 +3341,6 @@ fun PrayerSlab(
                                                                                 ?: false)
                                                                 }
                                                                 ?.name == p.name
-                                        val isActivePrayer = activePrayerName == p.name
                                         val dotColor =
                                                 if (darkTheme) p.dotColorDark else p.dotColorLight
                                         val shakeOffset = remember(p.name) { Animatable(0f) }
@@ -3434,7 +3429,7 @@ fun PrayerSlab(
                                                                                                 p.name] =
                                                                                                 shakeTrigger +
                                                                                                         1
-                                                                                        outcome.guidedPrayerName
+                                                                                        outcome.suggestedPrayerName
                                                                                                 ?.let {
                                                                                                         guided
                                                                                                         ->
@@ -3590,63 +3585,6 @@ fun PrayerSlab(
                                                                 modifier =
                                                                         Modifier.padding(end = 8.dp)
                                                         )
-                                                }
-
-                                                if (isActivePrayer) {
-                                                        Box(
-                                                                modifier =
-                                                                        Modifier.clip(
-                                                                                        RoundedCornerShape(
-                                                                                                999.dp
-                                                                                        )
-                                                                                )
-                                                                                .background(
-                                                                                        MaterialTheme
-                                                                                                .colorScheme
-                                                                                                .primary
-                                                                                                .copy(
-                                                                                                        alpha =
-                                                                                                                0.12f
-                                                                                                )
-                                                                                )
-                                                                                .clickable(
-                                                                                        indication =
-                                                                                                null,
-                                                                                        interactionSource =
-                                                                                                remember {
-                                                                                                        MutableInteractionSource()
-                                                                                                }
-                                                                                ) { onPrayClick() }
-                                                                                .padding(
-                                                                                        horizontal =
-                                                                                                10.dp,
-                                                                                        vertical =
-                                                                                                5.dp
-                                                                                )
-                                                        ) {
-                                                                Text(
-                                                                        text = "Pray",
-                                                                        style =
-                                                                                MaterialTheme
-                                                                                        .typography
-                                                                                        .labelSmall
-                                                                                        .copy(
-                                                                                                fontSize =
-                                                                                                        9.sp,
-                                                                                                fontWeight =
-                                                                                                        FontWeight
-                                                                                                                .SemiBold,
-                                                                                                letterSpacing =
-                                                                                                        0.06.sp
-                                                                                        ),
-                                                                        color =
-                                                                                MaterialTheme
-                                                                                        .colorScheme
-                                                                                        .primary
-                                                                )
-                                                        }
-
-                                                        Spacer(modifier = Modifier.width(8.dp))
                                                 }
 
                                                 // Arabic Name
@@ -3845,24 +3783,7 @@ fun PrayerSlab(
 
                                 Spacer(modifier = Modifier.height(18.dp))
 
-                                AnimatedVisibility(
-                                        visible = showQuickActions,
-                                        enter =
-                                                fadeIn(animationSpec = tween(320)) +
-                                                        slideInVertically(
-                                                                animationSpec =
-                                                                        tween(
-                                                                                320,
-                                                                                easing =
-                                                                                        FastOutSlowInEasing
-                                                                        )
-                                                        ) { it / 3 },
-                                        exit =
-                                                fadeOut(animationSpec = tween(200)) +
-                                                        slideOutVertically(
-                                                                animationSpec = tween(200)
-                                                        ) { it / 3 },
-                                ) { QuickDirectoryRow(onActionClick = onQuickActionTap) }
+
                         }
                 }
         }
@@ -4097,7 +4018,7 @@ private object LucideIcons {
 }
 
 @Composable
-private fun QuickDirectoryRow(
+fun QuickDirectoryRow(
         onActionClick: (HomeQuickAction) -> Unit,
         modifier: Modifier = Modifier,
 ) {
