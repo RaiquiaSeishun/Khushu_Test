@@ -66,6 +66,39 @@ jobs:
           adb shell settings put global transition_animation_scale 0
           adb shell settings put global animator_duration_scale 0
           bash gradlew -Dddmlib.getprop.timeout.sec=30 --max-workers=4 :app:connectedFdroidDebugAndroidTest
+      - name: Surface Android failure diagnostics
+        if: failure()
+        run: |
+          python3 - <<'PYTHON'
+          import pathlib, subprocess, xml.etree.ElementTree as ET
+          lines = []
+          log = pathlib.Path('emulator.log')
+          if log.exists():
+              lines.append('Emulator log tail:')
+              lines.extend(log.read_text(errors='replace').splitlines()[-60:])
+          for command in [
+              ['adb', 'devices', '-l'],
+              ['adb', 'shell', 'getprop', 'sys.boot_completed'],
+              ['adb', 'shell', 'service', 'check', 'package'],
+              ['adb', 'shell', 'service', 'check', 'activity'],
+              ['adb', 'logcat', '-d', '-t', '80', '*:E'],
+          ]:
+              try:
+                  result = subprocess.run(command, capture_output=True, text=True, timeout=15)
+                  lines.extend([' '.join(command), result.stdout, result.stderr])
+              except subprocess.TimeoutExpired:
+                  lines.append('Timed out: ' + ' '.join(command))
+          for report in pathlib.Path('app/build/outputs/androidTest-results').rglob('*.xml'):
+              try:
+                  root = ET.parse(report).getroot()
+                  for failure in root.iter('failure'):
+                      lines.extend([str(report), failure.get('message', ''), failure.text or ''])
+              except ET.ParseError:
+                  pass
+          message = '\n'.join(lines)[-16000:]
+          message = message.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+          print('::error title=Android failure diagnostics::' + message)
+          PYTHON
       - name: Retain device evidence
         if: always()
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
