@@ -15,8 +15,9 @@ Validation ran in the cloud machine on 2026-10-09 against the final application 
 | `connectedFdroidDebugAndroidTest` | 4 passed, 0 failed/errors/skipped on Android 11 / API 30 x86_64 software emulator |
 | Git integrity | Original upstream history and GPLv3 license retained; foundation commits pushed to origin/main; no upstream contribution |
 | GitHub / AlAdhan / JAKIM metadata and references | Live requests succeeded on 2026-10-09; repository public, not server-linked fork; three WLY01 samples expose a timetable mismatch |
+| Phone-test APK | Universal fdroid debug APK rebuilt; independent ID/label, API 30 minimum, ARM support, and APK signature verified |
 | Release builds / signing / installation of updates | Not executed; manual draft-release workflow is prepared |
-| GitHub CI | First run failed before tests in SDK setup; corrected run in progress, final outcome pending |
+| GitHub CI | [Final run](https://github.com/RaiquiaSeishun/Khushu_Test/actions/runs/37925651593) passed both jobs at `248d462`: build/JVM/lint for both variants and connected Android checks |
 
 The three new Android tests verified that a version-3 canvas database retained its saved layout/custom preset after migration to version 5, that the non-exported provider can read update files but refuses unrelated private cache files, and that MainActivity reaches RESUMED without finishing. The fourth is the existing package-context check, updated to use the fork's application ID.
 
@@ -34,3 +35,5 @@ Initial attempts were environment failures: Java lacked javac, tooling tried to 
 Current raw evidence is outside the checkout in `/workspace/downloads/final-setup-validation.log` and `/workspace/downloads/device-timeout-validation.log`; current test/lint reports are under `app/build`. Live processes and generated reports should not be assumed to survive publication.
 
 These checks validate development capabilities and the described regression behavior. The live [reference samples](PRAYER_REFERENCE_COMPARISON.md) show the current API method differs from the official zone timetable. These checks do not establish official accuracy, physical GPS provider accuracy/movement/battery use, notification delivery under Doze, unknown historical database versions, real signed APK upgrades, or third-party redistribution rights. Do not recommend publishing an application release until those required checks are resolved.
+
+The remote CI evidence was checked through GitHub job results. Later documentation commits do not change application sources or build inputs. Earlier failed or cancelled CI runs are not passing validation. GitHub download redirects for detailed logs were blocked by network policy; failure annotations exposed the missing-AVD error, and the corrected final device job passed. Current API evidence is retained at `/workspace/downloads/github-ci-validation.json`.
