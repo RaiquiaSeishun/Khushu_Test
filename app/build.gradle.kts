@@ -15,6 +15,13 @@ val gitHash: String = try {
     "unknown"
 }
 
+// CI phone builds advance independently of the production version code.
+val testVersionCode = providers.environmentVariable("SUKUN_TEST_VERSION_CODE").orNull?.let {
+    requireNotNull(it.toIntOrNull()) { "SUKUN_TEST_VERSION_CODE must be an integer" }.also { code ->
+        require(code in 87..2_100_000_000) { "Test version code must be between 87 and 2100000000" }
+    }
+}
+
 android {
     namespace = "com.kaizen.khushu"
     compileSdk = 36
@@ -51,6 +58,9 @@ android {
     buildTypes {
         debug {
             applicationIdSuffix = ".debug"
+            testVersionCode?.let {
+                versionNameSuffix = "-test.$it"
+            }
         }
         release {
             isMinifyEnabled = true
@@ -84,6 +94,14 @@ android {
         disable += "InvalidFragmentVersionForActivityResult"
     }
 
+}
+
+androidComponents {
+    onVariants(selector().withBuildType("debug")) { variant ->
+        testVersionCode?.let { code ->
+            variant.outputs.forEach { it.versionCode.set(code) }
+        }
+    }
 }
 
 ksp {

@@ -8,6 +8,8 @@ This fork is not endorsed by the original developer. Original copyright notices 
 
 Sukun uses an independently drawn ring mark and production application ID `io.github.raiquiaseishun.sukun`. Current debug builds use `io.github.raiquiaseishun.sukun.debug` and the label **Sukun Test**, with separate app data. It can coexist with Khushu; its data is separate. It cannot update the original app signed by another key. The Kotlin namespace remains unchanged to reduce synchronization conflicts.
 
+Phone-test downloads require a [retained test signing key](docs/TEST_SIGNING.md). Once configured, newer APKs update the same test app and preserve data. The old temporary-key APKs cannot transition through a normal update.
+
 ## Why this fork exists
 
 I started Sukun after encountering issues with Khushu's Qibla finder and GPS/location behavior. I use AI to investigate and make changes because I don't know how to code. I do not personally review the code; code review is also performed by AI.

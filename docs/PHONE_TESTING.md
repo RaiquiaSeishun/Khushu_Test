@@ -4,6 +4,8 @@ Use a development APK for these checks. It is debug-signed, not a production rel
 
 Download the `sukun-phone-test` artifact from a successful **Sukun checks** run on the repository's [GitHub Actions page](https://github.com/RaiquiaSeishun/Khushu_Test/actions/workflows/checks.yml). GitHub requires you to sign in to download Actions artifacts. On a phone, open the run in your browser and use desktop-site mode if the artifact section is hidden.
 
+New phone downloads require the [one-time retained test-key setup](TEST_SIGNING.md). After the first installation signed with that key, install newer APKs as updates to preserve data. A missing signing secret withholds the artifact instead of publishing another temporary-key APK. Earlier downloads used different temporary keys and cannot be updated by the new key.
+
 The download is a ZIP file. Extract it, then open `sukun-fdroid-debug.apk` and allow installation from your browser or file manager if Android prompts you. The archive also includes a checksum, source commit, and this checklist. Artifacts expire after 30 days; a new successful run produces a fresh download. This is a test build, not an F-Droid listing or production release.
 
 Alternatively, install with a connected computer:

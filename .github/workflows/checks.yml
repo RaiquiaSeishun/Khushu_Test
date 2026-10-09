@@ -25,20 +25,46 @@ jobs:
       - name: Install pinned Android targets
         run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
       - name: Test, build, and lint both distributions
-        run: bash gradlew --max-workers=4 :app:testFullDebugUnitTest :app:testFdroidDebugUnitTest :app:assembleFullDebug :app:assembleFdroidDebug :app:lintFullDebug :app:lintFdroidDebug
+        env:
+          TEST_RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          export SUKUN_TEST_VERSION_CODE=$((100000 + TEST_RUN_NUMBER))
+          bash gradlew --max-workers=4 :app:testFullDebugUnitTest :app:testFdroidDebugUnitTest :app:assembleFullDebug :app:assembleFdroidDebug :app:lintFullDebug :app:lintFdroidDebug
+      - name: Check retained phone-test signing key
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        id: test-signing
+        env:
+          TEST_KEYSTORE_BASE64: ${{ secrets.SUKUN_TEST_KEYSTORE_BASE64 }}
+        run: |
+          if [[ -n "$TEST_KEYSTORE_BASE64" ]]; then
+            echo 'available=true' >> "$GITHUB_OUTPUT"
+          else
+            echo '::notice::Phone download withheld: configure SUKUN_TEST_KEYSTORE_BASE64 once using scripts/setup-test-signing.sh. Temporary runner keys cannot produce repeatable updates.'
+          fi
       - name: Prepare phone-test download
+        if: steps.test-signing.outputs.available == 'true'
+        env:
+          TEST_KEYSTORE_BASE64: ${{ secrets.SUKUN_TEST_KEYSTORE_BASE64 }}
         run: |
           set -euo pipefail
+          umask 077
+          signing_file="$RUNNER_TEMP/sukun-test-signing.p12"
+          trap 'rm -f "$signing_file"' EXIT
+          printf '%s' "$TEST_KEYSTORE_BASE64" | base64 --decode > "$signing_file"
           test_apk=app/build/outputs/apk/fdroid/debug/app-fdroid-universal-debug.apk
-          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose "$test_apk"
           mkdir -p "$RUNNER_TEMP/sukun-phone-test"
-          cp "$test_apk" "$RUNNER_TEMP/sukun-phone-test/sukun-fdroid-debug.apk"
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" sign --ks "$signing_file" \
+            --ks-key-alias androiddebugkey --ks-pass pass:android --key-pass pass:android \
+            --out "$RUNNER_TEMP/sukun-phone-test/sukun-fdroid-debug.apk" "$test_apk"
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs \
+            "$RUNNER_TEMP/sukun-phone-test/sukun-fdroid-debug.apk" > "$RUNNER_TEMP/sukun-phone-test/signer-certificate.txt"
           cp LICENSE "$RUNNER_TEMP/sukun-phone-test/LICENSE"
           cp docs/PHONE_TESTING.md "$RUNNER_TEMP/sukun-phone-test/PHONE_TESTING.md"
           printf '%s\n' "$GITHUB_SHA" > "$RUNNER_TEMP/sukun-phone-test/source-commit.txt"
           cd "$RUNNER_TEMP/sukun-phone-test"
           sha256sum sukun-fdroid-debug.apk > SHA256SUMS
       - name: Upload phone-test APK
+        if: steps.test-signing.outputs.available == 'true'
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
           name: sukun-phone-test
@@ -108,6 +134,22 @@ jobs:
           adb shell settings put global transition_animation_scale 0
           adb shell settings put global animator_duration_scale 0
           bash gradlew -Dddmlib.getprop.timeout.sec=30 --max-workers=4 :app:connectedFdroidDebugAndroidTest
+      - name: Verify an update preserves installed app data
+        run: |
+          set -euo pipefail
+          app_id=io.github.raiquiaseishun.sukun.debug
+          adb shell am force-stop "$app_id"
+          adb shell run-as "$app_id" sh -c '"echo sukun-update-preserved > files/update-check.txt"'
+          adb exec-out run-as "$app_id" cat files/datastore/settings.preferences_pb > "$RUNNER_TEMP/settings-before.pb"
+          test -s "$RUNNER_TEMP/settings-before.pb"
+          export SUKUN_TEST_VERSION_CODE=87
+          bash gradlew --max-workers=4 :app:assembleFdroidDebug
+          adb install -r app/build/outputs/apk/fdroid/debug/app-fdroid-universal-debug.apk
+          adb exec-out run-as "$app_id" cat files/datastore/settings.preferences_pb > "$RUNNER_TEMP/settings-after.pb"
+          cmp "$RUNNER_TEMP/settings-before.pb" "$RUNNER_TEMP/settings-after.pb"
+          [[ "$(adb shell run-as "$app_id" cat files/update-check.txt | tr -d '\r')" == sukun-update-preserved ]]
+          adb shell dumpsys package "$app_id" | grep -F 'versionCode=87 '
+          echo 'APK update preserved the actual settings DataStore and private-file marker.'
       - name: Surface Android failure diagnostics
         if: failure()
         run: |
