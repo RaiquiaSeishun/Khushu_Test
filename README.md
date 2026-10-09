@@ -22,7 +22,7 @@ Sign in to GitHub, open a successful [Sukun checks run](https://github.com/Raiqu
 
 ## Home
 
-Prayer times, Qibla, Mosques and Events shortcuts appear together at the top of Home. Guided Prayer and its editor have been removed; daily prayer tracking, Tasbih and Study remain available. A saved Pray startup choice opens Home after updating.
+Home retains its prayer card, source notice, upcoming events and daily prayer list. Explore (Qibla, Mosques and Events) stays beneath the prayer list and is always shown, without a scroll-triggered reveal. Official JAKIM source information uses a compact row with separate Details. Guided Prayer and its editor have been removed; daily prayer tracking, Tasbih and Study remain available. A saved Pray startup choice opens Home after updating.
 
 ## Development
 

@@ -131,10 +131,10 @@ jobs:
           [[ "$(adb shell service check package | tr -d '\r')" == 'Service package: found' ]]
           [[ "$(adb shell service check activity | tr -d '\r')" == 'Service activity: found' ]]
           # The low-resolution skin retains Pixel 2's 420 dpi unless overridden.
-          # Use a representative 384 x 640 dp phone viewport (480 x 800 px at 200 dpi).
+          # Use a 384 x 832 dp phone viewport matching the reported portrait screen ratio.
           adb shell wm size
           adb shell wm density
-          adb shell wm size 480x800
+          adb shell wm size 480x1040
           adb shell wm density 200
           adb shell wm size
           adb shell wm density

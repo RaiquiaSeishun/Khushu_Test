@@ -176,12 +176,14 @@ class JakimTimetableRepositoryTest {
             val repository = PrayerTimeRepository(null, OkHttpClient(), server.url("/aladhan").toString(), jakim)
             val official = repository.getPrayerDataNotice(date, settings())!!
             assertFalse(official.approximate)
+            assertFalse(official.manualAdjustments)
             assertEquals("Official JAKIM times · WLY01", official.title)
             val cached = repository.getPrayerDataNotice(date, settings())!!
             assertFalse(cached.approximate)
             assertTrue(cached.details.contains("Cached official"))
             val adjusted = repository.getPrayerDataNotice(date, settings().copy(fajrOffsetMinutes = 3))!!
             assertTrue(adjusted.summary.contains("adjustments"))
+            assertTrue(adjusted.manualAdjustments)
             val pending = repository.getPrayerDataNotice(date, settings().copy(
                 automaticJakimZone = true, automaticJakimZoneConfirmed = false,
                 automaticJakimZoneNotice = "Checking the prayer zone for this GPS fix…"))!!

@@ -40,6 +40,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
@@ -3239,6 +3240,7 @@ fun PrayerSlab(
         extraTimings: List<PrayerInfo>,
         doneStates: Map<String, Boolean>,
         onToggleDoneAttempt: (String) -> PrayerToggleOutcome,
+        onQuickActionTap: (HomeQuickAction) -> Unit,
         //    ayahText: String,
         ayahRef: String,
         darkTheme: Boolean,
@@ -3268,8 +3270,8 @@ fun PrayerSlab(
                                         .padding(
                                                 start = 22.dp,
                                                 end = 22.dp,
-                                                top = 22.dp,
-                                                bottom = 32.dp + bottomPadding
+                                                top = 16.dp,
+                                                bottom = 12.dp + bottomPadding
                                         )
                 ) {
                         Column {
@@ -3781,8 +3783,11 @@ fun PrayerSlab(
                                         }
                                 }
 
-                                Spacer(modifier = Modifier.height(18.dp))
-
+                                Spacer(modifier = Modifier.height(12.dp))
+                                QuickDirectoryRow(
+                                    onActionClick = onQuickActionTap,
+                                    modifier = Modifier.testTag("home-quick-actions"),
+                                )
 
                         }
                 }

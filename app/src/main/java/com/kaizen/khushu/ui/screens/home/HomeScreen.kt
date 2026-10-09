@@ -20,6 +20,8 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import androidx.compose.foundation.layout.Arrangement
@@ -31,6 +33,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -667,26 +670,25 @@ fun HomeScreen(
                     }
                 }
 
-                item {
-                    QuickDirectoryRow(
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp).testTag("home-quick-actions"),
-                        onActionClick = { action ->
-                            if (action == HomeQuickAction.EVENTS && uiState.showUpcomingEventsOnHome) {
-                                // Card, shortcuts, optional source note, spacer, prayer list, events.
-                                val eventsIndex = if (uiState.prayerDataNotice == null) 4 else 5
-                                scope.launch { listState.animateScrollToItem(eventsIndex) }
-                            } else {
-                                selectedQuickAction = action
-                            }
-                        },
-                    )
-                }
-
                 uiState.prayerDataNotice?.let { notice ->
                     item { PrayerSourceCard(notice) }
                 }
 
                 item { Spacer(modifier = Modifier.height(14.dp)) }
+
+                if (uiState.showUpcomingEventsOnHome) {
+                    item {
+                        Box(Modifier.testTag("home-events")) {
+                            EventsStrip(
+                                header = displayEventsHeader,
+                                events = displayEvents,
+                                calendarEvents = displayCalendarEvents,
+                            )
+                        }
+                    }
+
+                    item { Spacer(modifier = Modifier.height(14.dp)) }
+                }
 
                 item {
                     PrayerSlab(
@@ -695,6 +697,14 @@ fun HomeScreen(
                                     if (uiState.showExtraPrayerTimingsOnHome) displayExtraTimings
                                     else emptyList(),
                             doneStates = doneStates,
+                            onQuickActionTap = { action ->
+                                if (action == HomeQuickAction.EVENTS && uiState.showUpcomingEventsOnHome) {
+                                    val eventsIndex = if (uiState.prayerDataNotice == null) 2 else 3
+                                    scope.launch { listState.animateScrollToItem(eventsIndex) }
+                                } else {
+                                    selectedQuickAction = action
+                                }
+                            },
                             onToggleDoneAttempt = { name ->
                                 val prayers = displayPrayers.filterNot { it.isExtra }
                                 val tappedIndex = prayers.indexOfFirst { it.name == name }
@@ -748,21 +758,8 @@ fun HomeScreen(
                             //                    ayahText = uiState.ayahText,
                             ayahRef = uiState.ayahRef,
                             darkTheme = darkTheme,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth().testTag("home-prayer-list")
                     )
-                }
-                if (uiState.showUpcomingEventsOnHome) {
-                    item {
-                        Box(Modifier.testTag("home-events")) {
-                            EventsStrip(
-                                header = displayEventsHeader,
-                                events = displayEvents,
-                                calendarEvents = displayCalendarEvents,
-                            )
-                        }
-                    }
-
-                    item { Spacer(modifier = Modifier.height(14.dp)) }
                 }
 
             }
@@ -894,27 +891,39 @@ fun HomeScreen(
 
 @Composable
 private fun PrayerSourceCard(notice: com.kaizen.khushu.data.repository.PrayerDataNotice) {
-    // Keep expanded details open across routine timetable refreshes.
-    var expanded by rememberSaveable { mutableStateOf(false) }
+    var showDetails by rememberSaveable { mutableStateOf(false) }
     val colors = MaterialTheme.colorScheme
     Surface(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 8.dp),
-        shape = RoundedCornerShape(20.dp),
+        onClick = { showDetails = true },
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 4.dp)
+            .heightIn(min = 48.dp).testTag("home-prayer-source"),
+        shape = RoundedCornerShape(16.dp),
         color = if (notice.approximate) colors.tertiaryContainer else colors.surfaceContainer,
         contentColor = if (notice.approximate) colors.onTertiaryContainer else colors.onSurface,
     ) {
-        Column(Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
-            Text(notice.title, style = MaterialTheme.typography.labelLarge)
-            Spacer(Modifier.height(4.dp))
-            Text(notice.summary, style = MaterialTheme.typography.bodySmall)
-            if (expanded) {
-                Spacer(Modifier.height(8.dp))
-                Text(notice.details, style = MaterialTheme.typography.bodySmall)
+        Column(
+            Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(notice.title, modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelMedium)
+                Text("Details", style = MaterialTheme.typography.labelSmall, color = colors.primary)
             }
-            TextButton(
-                onClick = { expanded = !expanded },
-                contentPadding = PaddingValues(horizontal = 0.dp),
-            ) { Text(if (expanded) "Hide details" else "Details") }
+            if (notice.approximate || notice.manualAdjustments) {
+                Spacer(Modifier.height(4.dp))
+                Text(notice.summary, style = MaterialTheme.typography.bodySmall)
+            }
         }
+    }
+    if (showDetails) {
+        AlertDialog(
+            onDismissRequest = { showDetails = false },
+            title = { Text(notice.title) },
+            text = {
+                Text(notice.summary + "\n\n" + notice.details,
+                    modifier = Modifier.verticalScroll(rememberScrollState()))
+            },
+            confirmButton = { TextButton(onClick = { showDetails = false }) { Text("Close") } },
+        )
     }
 }

@@ -6,6 +6,7 @@ data class PrayerDataNotice(
     val summary: String,
     val details: String,
     val approximate: Boolean,
+    val manualAdjustments: Boolean = false,
 ) {
     companion object {
         fun fromJakim(result: JakimTimetableRepository.Result, settings: UserSettings): PrayerDataNotice {
@@ -30,6 +31,7 @@ data class PrayerDataNotice(
                     if (adjusted) "Manual time adjustments are active." else "Using the e-Solat timetable.",
                     details + if (adjusted) " Manual offsets are active; displayed times differ from the official entries." else "",
                     false,
+                    manualAdjustments = adjusted,
                 )
             }
         }
