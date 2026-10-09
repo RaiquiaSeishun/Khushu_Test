@@ -114,7 +114,7 @@ jobs:
           python3 - <<'PYTHON'
           import pathlib, subprocess, xml.etree.ElementTree as ET
           def annotation(title, lines):
-              message = '\n'.join(lines)[-3500:]
+              message = '\n'.join(lines)[:3500]
               message = message.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
               print('::error title=' + title + '::' + message)
           reports = list(pathlib.Path('app/build/outputs/androidTest-results').rglob('*.xml'))

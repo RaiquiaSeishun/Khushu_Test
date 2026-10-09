@@ -18,6 +18,7 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class AppIconInstrumentedTest {
+    @org.junit.Before fun preparePermissions() = prepareActivityTestPermissions()
     private val context get() = InstrumentationRegistry.getInstrumentation().targetContext
     private val aliases = mapOf("DYNAMIC" to "MainActivityAliasDynamic", "DARK" to "MainActivityAliasDark",
         "LIGHT" to "MainActivityAliasLight", "GREEN" to "MainActivityAliasGreen")

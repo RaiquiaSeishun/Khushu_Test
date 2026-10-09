@@ -16,6 +16,7 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class ReliabilityInstrumentedTest {
+    @org.junit.Before fun preparePermissions() = prepareActivityTestPermissions()
     private val context get() = InstrumentationRegistry.getInstrumentation().targetContext
 
     @Test fun updateProviderSharesOnlyUpdateFiles() {
