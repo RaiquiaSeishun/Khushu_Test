@@ -55,12 +55,12 @@ sealed interface DownloadState {
 }
 
 object AppUpdateRepository {
-    private const val GITHUB_API_URL = "https://api.github.com/repos/greykaizen/khushu/releases/latest"
+    private const val GITHUB_API_URL = "https://api.github.com/repos/RaiquiaSeishun/Khushu_Test/releases/latest"
     private const val GITHUB_ACCEPT_HEADER = "application/vnd.github.v3+json"
     // Must match the authority declared in AndroidManifest.xml for the FileProvider.
     // Using applicationId so it resolves correctly across product flavors.
     private val PROVIDER_AUTHORITY: String by lazy { "${BuildConfig.APPLICATION_ID}.update_provider" }
-    private const val USER_AGENT = "Khushu/${BuildConfig.VERSION_NAME} (Android; +https://github.com/greykaizen/khushu)"
+    private const val USER_AGENT = "Sukun/${BuildConfig.VERSION_NAME} (Android; +https://github.com/RaiquiaSeishun/Khushu_Test)"
 
     private val json = Json { ignoreUnknownKeys = true }
     private val client = OkHttpClient.Builder()
@@ -177,7 +177,11 @@ object AppUpdateRepository {
             val body = response.body ?: return@withContext DownloadState.Failed("Empty response body")
             val contentLength = body.contentLength()
             val fileName = "khushu-update-${BuildConfig.VERSION_NAME}.apk"
-            val file = File(context.cacheDir, fileName)
+            val directory = File(context.cacheDir, "updates")
+            if (!directory.isDirectory && !directory.mkdirs()) {
+                return@withContext DownloadState.Failed("Cannot create update cache")
+            }
+            val file = File(directory, fileName)
 
             FileOutputStream(file).use { output ->
                 val inputStream = body.byteStream()

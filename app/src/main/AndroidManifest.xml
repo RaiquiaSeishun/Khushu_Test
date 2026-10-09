@@ -21,6 +21,16 @@
         android:theme="@style/Theme.Khushu"
         android:enableOnBackInvokedCallback="true">
 
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.update_provider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/update_file_paths" />
+        </provider>
+
         <service
             android:name=".service.PlaybackService"
             android:exported="true"
