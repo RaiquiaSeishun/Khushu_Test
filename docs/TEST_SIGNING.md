@@ -12,7 +12,7 @@ The Codex GitHub integration can push code and inspect runs, but the secret-encr
 bash scripts/setup-test-signing.sh
 ```
 
-The script verifies secret access, creates a 4096-bit RSA test key outside the checkout at `~/.local/share/sukun-signing/sukun-test.p12`, and uploads its encoding directly to the repository secret. An optional absolute path selects another secure location. Repeating it reuses the existing key rather than generating a replacement. Back up that file securely. If moving computers, restore the same file before running the script again. Do not replace an existing secret using a freshly generated key.
+The script verifies secret access, creates a 4096-bit RSA test key outside the checkout at `~/.local/share/sukun-signing/sukun-test.p12`, and uploads its encoding directly to the repository secret. An optional absolute path selects another secure location. Repeating it reuses the existing key rather than generating a replacement. If the secret already exists but the local key is missing, it refuses to generate a replacement. Back up that file securely. If moving computers, restore the same file before running the script again. Do not replace an existing secret using a freshly generated key.
 
 This debug identity uses the Android test alias/password (`androiddebugkey` / `android`). The password is conventional; the private key file and repository secret must remain private. It is not the production identity. Never paste the key or its base64 encoding into chat or commit it.
 
@@ -24,4 +24,4 @@ The old GitHub runner keys were temporary and cannot be recovered from their APK
 
 ## Validation
 
-CI exercises an actual version-86 → version-87 APK update on API 30 and API 35. It checks the installed version and byte-for-byte preservation of the real settings DataStore and a private-file marker. These emulator checks use a key retained within the job; repository-secret signing additionally needs the one-time owner configuration and a successful signed-download run. No production signing or old-key recovery is claimed.
+CI exercises an actual APK update to the next version code on API 30 and API 35 (currently 86 → 87). It checks the installed version and byte-for-byte preservation of the real settings DataStore and a private-file marker. These emulator checks use a key retained within the job; repository-secret signing additionally needs the one-time owner configuration and a successful signed-download run. No production signing or old-key recovery is claimed.
