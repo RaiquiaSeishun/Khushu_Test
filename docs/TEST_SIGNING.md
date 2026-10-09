@@ -42,3 +42,5 @@ The old GitHub runner keys were temporary and cannot be recovered from their APK
 ## Validation
 
 CI exercises an actual APK update to the next version code on API 30 and API 35 (currently 86 → 87). It checks the installed version and byte-for-byte preservation of the real settings DataStore and a private-file marker. These emulator checks use a key retained within the job; repository-secret signing additionally needs the one-time owner configuration and a successful signed-download run. No production signing or old-key recovery is claimed.
+
+The owner completed setup on macOS on 2026-10-09. [Run 37946015508](https://github.com/RaiquiaSeishun/Khushu_Test/actions/runs/37946015508) passed both emulator update checks and used the configured repository secret to sign, verify and upload [the first retained-key phone artifact](https://github.com/RaiquiaSeishun/Khushu_Test/actions/runs/37946015508/artifacts/11624152782), test version code 100013. See [the validation record](VALIDATION.md). Keep the same secret and backup for future builds.

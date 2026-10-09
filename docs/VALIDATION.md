@@ -1,5 +1,20 @@
 # Validation evidence
 
+## Retained test signing and APK updates
+
+On 2026-10-09, the owner reported successful execution of the signing setup script on macOS. [Run 37946015508](https://github.com/RaiquiaSeishun/Khushu_Test/actions/runs/37946015508) then completed successfully at application/workflow commit `822149b150db04926a227a3927a94eb2f20471d4`:
+
+- The full/fdroid build, JVM and lint job passed. Local fdroid validation also executed 23 tests with 0 failures/errors/skips and built a test-version-100001 APK with the unchanged test application ID.
+- The retained-key availability, APK signing/verification and phone-artifact upload steps all passed. The new download uses version code 100013 (`100000 + workflow run 13`); the production version code is unchanged.
+- API 30 and API 35 connected checks passed. Each job then installed its own baseline, ran both icon tests to establish real saved settings, installed the next-version APK with `adb install -r`, and confirmed the installed version, unchanged settings DataStore bytes and retained private-file marker.
+- The owner setup helper generated a real RSA4096 key, retained it on repeat runs, produced correct base64 encoding, avoided overwriting an existing secret, and refused replacement when the local backup was absent. Those helper checks mocked GitHub writes; the owner upload and successful CI signing separately establish actual repository-secret configuration. A locally signed APK using a script-generated key verified successfully. Temporary validation keys were removed.
+
+The first update-check attempt failed with `INSTALL_FAILED_UPDATE_INCOMPATIBLE`: separate CI steps used different Android user directories and therefore different generated debug keys. The corrected workflow preserves the same Android directory throughout each emulator update check. Earlier failed/cancelled runs are not passing evidence.
+
+[Download the retained-key phone-test ZIP](https://github.com/RaiquiaSeishun/Khushu_Test/actions/runs/37946015508/artifacts/11624152782). It contains the APK, checksum, source commit, public signer certificate, phone checklist and license. Artifact retention is 30 days. The earlier temporary-key installations cannot accept this new signer; data transfer is not implemented. Subsequent retained-key builds support normal updates to the first consistently signed installation. Physical-phone upgrades and production signing are still distinct checks.
+
+Selected run/job/artifact evidence is saved outside the checkout in `/workspace/downloads/stable-test-signing-ci-validation.json`; local build evidence is in `/workspace/downloads/stable-test-signing-build.log`. See [test signing setup and backup instructions](TEST_SIGNING.md). Documentation-only follow-ups do not modify the tested application sources or workflow configuration.
+
 ## JAKIM and icon follow-up — 0.24.12 / code 86
 
 On 2026-10-09, [GitHub Actions run 37938364042](https://github.com/RaiquiaSeishun/Khushu_Test/actions/runs/37938364042) completed successfully at source commit `3628228a31fe3a661b5c984c06661585fa1976d5`. The build job and both connected Android jobs passed. Documentation-only commits after this run do not change its application sources or build inputs.
