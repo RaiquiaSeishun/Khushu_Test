@@ -39,7 +39,7 @@ Automatic location refresh runs only while the app is visible. Fixes must be rec
 
 Local prayer mode makes no AlAdhan requests. Unsupported local conventions use a disclosed Muslim World League fallback. Online mode sends coordinates, date, convention, madhab, and time zone to AlAdhan over HTTPS. Successful responses are cached in private app cache for 24 hours by the complete request, including across process restarts; simultaneous identical requests share a fetch. Failed requests can be retried.
 
-**For official Malaysian times, choose Official JAKIM / e-Solat in Prayer Settings and select your official prayer zone.** Complete monthly timetables are cached for offline use, with daily revision checks and a displayed source/retrieval status. Keep manual offsets at zero to match official entries. GPS does not change your selected zone.
+**For official Malaysian times, choose Official JAKIM / e-Solat in Prayer Settings and select your official prayer zone.** Complete monthly timetables are cached for offline use, with daily revision checks and a displayed source/retrieval status. Keep manual offsets at zero to match official entries. Optional [GPS zone selection](docs/AUTOMATIC_PRAYER_ZONE.md) uses a community map and sends coordinates for lookup; verify the suggested zone. Manual selection is always available, including for ambiguous/special areas.
 
 AlAdhan’s Malaysian convention remains a separate calculated source and differs from official zone timetables in our recorded samples. If official data is unavailable, Home and the widget disclose an approximate local fallback; reminders are skipped for dates lacking official data. See [JAKIM and icon customization](docs/JAKIM_AND_ICONS.md) for details and validation scope.
 

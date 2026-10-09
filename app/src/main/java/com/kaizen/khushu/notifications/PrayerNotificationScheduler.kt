@@ -61,7 +61,7 @@ fun UserSettings.toPrayerNotificationScheduleConfig(): PrayerNotificationSchedul
         locationLng = locationLng,
         useGpsLocation = useGpsLocation,
         prayerSourceType = prayerSourceType,
-        jakimZone = jakimZone,
+        jakimZone = effectiveJakimZone,
         lastPrayerRefreshEpochMs = lastPrayerRefreshEpochMs,
         fajrOffsetMinutes = fajrOffsetMinutes,
         dhuhrOffsetMinutes = dhuhrOffsetMinutes,

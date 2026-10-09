@@ -97,7 +97,7 @@ class PrayerTimeRepository(
         settings: UserSettings
     ): Map<String, Date> {
         if (settings.prayerSourceType == "JAKIM") {
-            val official = jakim.get(date, settings.jakimZone).times
+            val official = jakim.get(date, settings.effectiveJakimZone).times
             if (official != null) {
                 val offsets = mapOf("Fajr" to settings.fajrOffsetMinutes, "Dhuhr" to settings.dhuhrOffsetMinutes,
                     "Asr" to settings.asrOffsetMinutes, "Maghrib" to settings.maghribOffsetMinutes, "Isha" to settings.ishaOffsetMinutes)
@@ -164,13 +164,13 @@ class PrayerTimeRepository(
         settings: UserSettings
     ): Map<String, Date> {
         if (settings.prayerSourceType == "JAKIM") {
-            val official = jakim.get(date, settings.jakimZone).times
+            val official = jakim.get(date, settings.effectiveJakimZone).times
             if (official != null) {
                 val nextDate = Date.from(JakimTimetableRepository.localDate(date).plusDays(1)
                     .atStartOfDay(JakimTimetableRepository.timeZone).toInstant())
                 val result = mutableMapOf("IMSAK" to official.getValue("Imsak"), "SUNRISE" to official.getValue("Sunrise"),
                     "SUNSET" to official.getValue("Maghrib"))
-                val nextFajr = jakim.get(nextDate, settings.jakimZone).times?.get("Fajr")
+                val nextFajr = jakim.get(nextDate, settings.effectiveJakimZone).times?.get("Fajr")
                 if (nextFajr != null) {
                     val sunset = official.getValue("Maghrib")
                     val night = nextFajr.time - sunset.time
@@ -246,10 +246,10 @@ class PrayerTimeRepository(
     }
 
     suspend fun hasOfficialTimetable(date: Date, settings: UserSettings): Boolean =
-        settings.prayerSourceType != "JAKIM" || jakim.get(date, settings.jakimZone).times != null
+        settings.prayerSourceType != "JAKIM" || jakim.get(date, settings.effectiveJakimZone).times != null
 
     suspend fun refreshOfficialTimetable(date: Date, settings: UserSettings) {
-        if (settings.prayerSourceType == "JAKIM") jakim.get(date, settings.jakimZone, forceRefresh = true)
+        if (settings.prayerSourceType == "JAKIM") jakim.get(date, settings.effectiveJakimZone, forceRefresh = true)
     }
 
     suspend fun getPrayerDataNotice(date: Date, settings: UserSettings): String? {
@@ -257,10 +257,12 @@ class PrayerTimeRepository(
             else if (!supportsLocalCalculationMethod(settings.prayerCalculationMethod))
                 "Selected convention needs internet. Using approximate Muslim World League times offline."
             else null
-        val result = jakim.get(date, settings.jakimZone)
+        val result = jakim.get(date, settings.effectiveJakimZone)
         val adjusted = listOf(settings.fajrOffsetMinutes, settings.dhuhrOffsetMinutes, settings.asrOffsetMinutes,
             settings.maghribOffsetMinutes, settings.ishaOffsetMinutes).any { it != 0 }
-        return result.notice + if (adjusted && result.times != null) " Manual offsets are active; displayed times differ from the official entries." else ""
+        val zoneNotice = if (settings.automaticJakimZone) settings.automaticJakimZoneNotice
+            else "Zone selected manually; GPS does not change it."
+        return result.notice + " " + zoneNotice + if (adjusted && result.times != null) " Manual offsets are active; displayed times differ from the official entries." else ""
     }
 
     suspend fun getFallbackPrayerTimes(

@@ -92,6 +92,9 @@ class SettingsRepository(private val context: Context) {
         val LOCATION_REFRESH_INTERVAL = intPreferencesKey("location_refresh_interval_minutes")
         val USE_GPS_LOCATION = booleanPreferencesKey("use_gps_location")
         val JAKIM_ZONE = stringPreferencesKey("jakim_zone")
+        val JAKIM_AUTO_ZONE = booleanPreferencesKey("jakim_auto_zone")
+        val JAKIM_AUTO_CONFIRMED = booleanPreferencesKey("jakim_auto_confirmed")
+        val JAKIM_AUTO_NOTICE = stringPreferencesKey("jakim_auto_notice")
         val PRAYER_SOURCE_TYPE = stringPreferencesKey("prayer_source_type")
         val PRAYER_OFFSET_FAJR = intPreferencesKey("prayer_offset_fajr")
         val PRAYER_OFFSET_DHUHR = intPreferencesKey("prayer_offset_dhuhr")
@@ -218,6 +221,9 @@ class SettingsRepository(private val context: Context) {
                 locationAccuracyMeters = preferences[PreferencesKeys.LOCATION_ACCURACY] ?: 0f,
                 locationRefreshIntervalMinutes = preferences[PreferencesKeys.LOCATION_REFRESH_INTERVAL] ?: 60,
                 jakimZone = preferences[PreferencesKeys.JAKIM_ZONE] ?: "",
+                automaticJakimZone = preferences[PreferencesKeys.JAKIM_AUTO_ZONE] ?: false,
+                automaticJakimZoneConfirmed = preferences[PreferencesKeys.JAKIM_AUTO_CONFIRMED] ?: false,
+                automaticJakimZoneNotice = preferences[PreferencesKeys.JAKIM_AUTO_NOTICE] ?: "",
                 prayerSourceType = preferences[PreferencesKeys.PRAYER_SOURCE_TYPE] ?: "LOCAL",
                 fajrOffsetMinutes = preferences[PreferencesKeys.PRAYER_OFFSET_FAJR] ?: 0,
                 dhuhrOffsetMinutes = preferences[PreferencesKeys.PRAYER_OFFSET_DHUHR] ?: 0,
@@ -297,6 +303,10 @@ class SettingsRepository(private val context: Context) {
             it[PreferencesKeys.LOCATION_LNG] = lng
             it.remove(PreferencesKeys.LAST_LOCATION_FIX)
             it.remove(PreferencesKeys.LOCATION_ACCURACY)
+            if (it[PreferencesKeys.JAKIM_AUTO_ZONE] == true) {
+                it[PreferencesKeys.JAKIM_AUTO_CONFIRMED] = false
+                it[PreferencesKeys.JAKIM_AUTO_NOTICE] = "Waiting for a verified GPS fix."
+            }
         }
     }
 
@@ -306,6 +316,10 @@ class SettingsRepository(private val context: Context) {
             it[PreferencesKeys.LOCATION_LNG] = lng
             it[PreferencesKeys.LAST_LOCATION_FIX] = epochMs
             it[PreferencesKeys.LOCATION_ACCURACY] = accuracy
+            if (it[PreferencesKeys.JAKIM_AUTO_ZONE] == true) {
+                it[PreferencesKeys.JAKIM_AUTO_CONFIRMED] = false
+                it[PreferencesKeys.JAKIM_AUTO_NOTICE] = "Checking the prayer zone for this GPS fix…"
+            }
         }
     }
 
@@ -314,12 +328,43 @@ class SettingsRepository(private val context: Context) {
     }
 
     suspend fun updateUseGpsLocation(enabled: Boolean) {
-        context.dataStore.edit { it[PreferencesKeys.USE_GPS_LOCATION] = enabled }
+        context.dataStore.edit {
+            it[PreferencesKeys.USE_GPS_LOCATION] = enabled
+            if (!enabled) it[PreferencesKeys.JAKIM_AUTO_ZONE] = false
+        }
     }
 
     suspend fun updateJakimZone(zone: String) {
         require(zone.isEmpty() || zone in JakimZones.labels)
-        context.dataStore.edit { it[PreferencesKeys.JAKIM_ZONE] = zone }
+        context.dataStore.edit {
+            it[PreferencesKeys.JAKIM_ZONE] = zone
+            it[PreferencesKeys.JAKIM_AUTO_ZONE] = false
+            it.remove(PreferencesKeys.JAKIM_AUTO_NOTICE)
+        }
+    }
+
+    suspend fun updateAutomaticJakimZone(enabled: Boolean) {
+        context.dataStore.edit {
+            it[PreferencesKeys.JAKIM_AUTO_ZONE] = enabled
+            if (enabled) {
+                it[PreferencesKeys.USE_GPS_LOCATION] = true
+                it[PreferencesKeys.JAKIM_AUTO_CONFIRMED] = false
+                it[PreferencesKeys.JAKIM_AUTO_NOTICE] = "Waiting for a verified GPS fix. Use GPS Access if permission is needed."
+            } else it.remove(PreferencesKeys.JAKIM_AUTO_NOTICE)
+        }
+    }
+
+    /** Ignore an old response after another fix, source change or manual override. */
+    suspend fun applyAutomaticJakimZone(fixEpochMs: Long, lat: Float, lng: Float, result: JakimZoneLocator.Result) {
+        context.dataStore.edit {
+            if (it[PreferencesKeys.JAKIM_AUTO_ZONE] != true || it[PreferencesKeys.USE_GPS_LOCATION] != true ||
+                it[PreferencesKeys.PRAYER_SOURCE_TYPE] != "JAKIM" ||
+                it[PreferencesKeys.LAST_LOCATION_FIX] != fixEpochMs ||
+                it[PreferencesKeys.LOCATION_LAT] != lat || it[PreferencesKeys.LOCATION_LNG] != lng) return@edit
+            result.zone?.let { zone -> require(zone in JakimZones.labels); it[PreferencesKeys.JAKIM_ZONE] = zone }
+            it[PreferencesKeys.JAKIM_AUTO_CONFIRMED] = result.zone != null
+            it[PreferencesKeys.JAKIM_AUTO_NOTICE] = result.notice
+        }
     }
 
     suspend fun updatePrayerSourceType(source: String) {
@@ -690,6 +735,9 @@ data class UserSettings(
     val locationRefreshIntervalMinutes: Int = 60,
     val prayerSourceType: String = "LOCAL",
     val jakimZone: String = "",
+    val automaticJakimZone: Boolean = false,
+    val automaticJakimZoneConfirmed: Boolean = false,
+    val automaticJakimZoneNotice: String = "",
     val fajrOffsetMinutes: Int = 0,
     val dhuhrOffsetMinutes: Int = 0,
     val asrOffsetMinutes: Int = 0,
@@ -725,4 +773,8 @@ data class UserSettings(
     val widgetPanelColor: String = "#000000",
     val widgetPanelOpacity: Float = 0.3f,
     val widgetFontColor: String = "#FFFFFF"
-)
+) {
+    /** Keep the previous choice visible, but do not use an unconfirmed automatic zone for prayers. */
+    val effectiveJakimZone: String
+        get() = if (automaticJakimZone && !automaticJakimZoneConfirmed) "" else jakimZone
+}

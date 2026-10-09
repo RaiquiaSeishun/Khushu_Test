@@ -281,22 +281,33 @@ fun PrayerSettingsScreen(
                     )
                 }
                 if (settings.prayerSourceType == "JAKIM") {
+                    SettingsToggleItem(
+                        title = "Select prayer zone using GPS",
+                        subtitle = "Sends coordinates to the Waktu Solat community map for zone lookup. Verify the detected zone; manual selection is always available.",
+                        checked = settings.automaticJakimZone,
+                        onCheckedChange = viewModel::setAutomaticJakimZone,
+                    )
                     Box(modifier = Modifier.padding(horizontal = 20.dp)) {
                         SettingsDropdown(
                             title = "Official prayer zone",
-                            subtitle = "Select the zone covering your location. GPS does not select or change it.",
+                            subtitle = if (settings.automaticJakimZone) "Choosing a zone here turns off automatic selection."
+                                else "Select the zone covering your location.",
                             options = listOf("") + JakimZones.labels.keys,
                             selectedOption = settings.jakimZone,
                             optionLabel = { JakimZones.labels[it] ?: "Select your zone" },
                             onOptionSelected = viewModel::setJakimZone,
                         )
                     }
+                    if (settings.automaticJakimZone && settings.automaticJakimZoneNotice.isNotBlank()) {
+                        Text(settings.automaticJakimZoneNotice, modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+                            style = MaterialTheme.typography.bodySmall)
+                    }
                 }
             }
 
             Text(
                 text = if (settings.prayerSourceType == "JAKIM")
-                    "Uses official e-Solat entries for your selected zone in Malaysia time. Downloads a full month for offline use and checks for revisions once a day. Only zone and dates are sent; GPS coordinates are not sent. Keep offsets at zero to match the official timetable. If no valid cached timetable exists, an approximate local fallback is clearly reported on Home."
+                    "Uses official e-Solat entries for your selected zone in Malaysia time. Downloads a full month for offline use and checks for revisions once a day. Only zone and dates are sent to JAKIM. Automatic zone selection separately sends coordinates to the Waktu Solat community service; its map is not endorsed by JAKIM. Keep offsets at zero to match the official timetable. If the zone or timetable cannot be confirmed, Home reports an approximate local fallback."
                 else if (settings.prayerSourceType == "API")
                     "Online mode sends coordinates, date, method, madhab and time zone to AlAdhan over HTTPS. Results are cached for 24 hours. If unavailable, approximate local times are used. Malaysian results are calculations, not verified official zone timetables."
                 else if (!PrayerCalculationPolicy.supportsLocalMethod(settings.prayerCalculationMethod))

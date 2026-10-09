@@ -17,6 +17,7 @@ import com.kaizen.khushu.data.model.defaultCustomBeadStyle
 import com.kaizen.khushu.data.repository.QuranScriptFontRepository
 import com.kaizen.khushu.data.repository.SettingsRepository
 import com.kaizen.khushu.data.repository.UserSettings
+import com.kaizen.khushu.data.repository.JakimZoneLocator
 import com.kaizen.khushu.util.AppIconManager
 import com.kaizen.khushu.widget.PrayerWidgetProvider
 import com.kaizen.khushu.logic.DeviceLocation
@@ -43,6 +44,9 @@ class SettingsViewModel(
 ) : ViewModel() {
     private var foregroundJob: Job? = null
     private var locationJob: Job? = null
+    private var zoneJob: Job? = null
+    private val zoneLocator = JakimZoneLocator(java.io.File(appContext.filesDir, "gps-prayer-zone.json"))
+    private data class ZoneFix(val enabled: Boolean, val epoch: Long, val lat: Float, val lng: Float, val accuracy: Float)
     private var lastAutomaticAttemptMs = 0L
     val locationError = MutableStateFlow<String?>(null)
     val locationRefreshing = MutableStateFlow(false)
@@ -89,6 +93,14 @@ class SettingsViewModel(
         )
 
     init {
+        viewModelScope.launch {
+            settings.map { ZoneFix(it.automaticJakimZone && it.useGpsLocation && it.prayerSourceType == "JAKIM",
+                it.lastLocationFixEpochMs, it.locationLat, it.locationLng, it.locationAccuracyMeters) }
+                .distinctUntilChanged().collect {
+                    zoneJob?.cancel()
+                    if (foregroundJob?.isActive == true) resolveAutomaticZone(repository.settingsFlow.first())
+                }
+        }
         viewModelScope.launch {
             settings.map { it.useGpsLocation }.distinctUntilChanged().collect { enabled ->
                 if (!enabled) locationJob?.cancel()
@@ -437,6 +449,24 @@ class SettingsViewModel(
         viewModelScope.launch { repository.updateJakimZone(zone) }
     }
 
+    fun setAutomaticJakimZone(enabled: Boolean) {
+        viewModelScope.launch {
+            repository.updateAutomaticJakimZone(enabled)
+            if (enabled) refreshLocation()
+        }
+    }
+
+    private fun resolveAutomaticZone(current: UserSettings) {
+        if (zoneJob?.isActive == true || !current.automaticJakimZone || !current.useGpsLocation ||
+            current.prayerSourceType != "JAKIM" || current.lastLocationFixEpochMs <= 0 ||
+            System.currentTimeMillis() - current.lastLocationFixEpochMs !in 0..LocationFixPolicy.MAX_AGE_MS) return
+        zoneJob = viewModelScope.launch {
+            val result = zoneLocator.locate(current.locationLat.toDouble(), current.locationLng.toDouble(), current.locationAccuracyMeters)
+            repository.applyAutomaticJakimZone(current.lastLocationFixEpochMs, current.locationLat, current.locationLng, result)
+            PrayerWidgetProvider.forceWidgetRefresh(appContext)
+        }
+    }
+
     fun setPrayerSourceType(source: String) {
         viewModelScope.launch { repository.updatePrayerSourceType(source) }
     }
@@ -513,12 +543,15 @@ class SettingsViewModel(
     fun onForeground() {
         if (foregroundJob?.isActive == true) return
         foregroundJob = viewModelScope.launch {
+            val initial = repository.settingsFlow.first()
+            if (initial.automaticJakimZone && !initial.automaticJakimZoneConfirmed) resolveAutomaticZone(initial)
             while (isActive) {
                 val current = repository.settingsFlow.first()
-                if (current.useGpsLocation && LocationFixPolicy.needsRefresh(
+                if (current.useGpsLocation && (LocationFixPolicy.needsRefresh(
                         current.lastLocationFixEpochMs, System.currentTimeMillis(),
                         current.locationRefreshIntervalMinutes,
-                    ) && LocationFixPolicy.canRetryAutomatically(lastAutomaticAttemptMs, SystemClock.elapsedRealtime())) {
+                    ) || current.automaticJakimZone && !current.automaticJakimZoneConfirmed) &&
+                    LocationFixPolicy.canRetryAutomatically(lastAutomaticAttemptMs, SystemClock.elapsedRealtime())) {
                     lastAutomaticAttemptMs = SystemClock.elapsedRealtime()
                     refreshLocation()
                 }
@@ -530,6 +563,7 @@ class SettingsViewModel(
     fun onBackground() {
         foregroundJob?.cancel()
         locationJob?.cancel()
+        zoneJob?.cancel()
     }
 
     fun setLocationRefreshInterval(minutes: Int) {

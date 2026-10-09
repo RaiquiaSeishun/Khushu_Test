@@ -109,7 +109,7 @@ class JakimTimetableRepository(
                 .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
             Result(cached!!.getValue(day),
                 "${if (fromCache) "Cached official" else "Official"} JAKIM/e-Solat · $zone · $day · retrieved $retrieved. " +
-                    "GPS does not change the selected zone. Night fractions are derived, not official timetable entries." +
+                    "Night fractions are derived, not official timetable entries." +
                     if (key in failedAt) " Revision check unavailable; using the saved timetable." else "")
         }
     }

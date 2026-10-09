@@ -145,4 +145,26 @@ class JakimTimetableRepositoryTest {
             assertEquals("2026-10-10", JakimTimetableRepository.localDate(nextPrayerDate(date, settings())).toString())
         } finally { TimeZone.setDefault(original); server.shutdown() }
     }
+
+    @Test fun unconfirmedAutomaticZoneCannotReusePriorOfficialTimesOrReminders() = runBlocking {
+        val server = MockWebServer(); server.start()
+        try {
+            val jakim = JakimTimetableRepository(null, OkHttpClient(), server.url("/official").toString())
+            val repository = PrayerTimeRepository(null, OkHttpClient(), server.url("/aladhan").toString(), jakim)
+            val pending = settings().copy(automaticJakimZone = true, automaticJakimZoneConfirmed = false,
+                automaticJakimZoneNotice = "Checking the prayer zone for this GPS fix…")
+            assertEquals("", pending.effectiveJakimZone)
+            assertFalse(repository.hasOfficialTimetable(date, pending))
+            assertEquals(repository.getEffectivePrayerDateTimes(date, pending.copy(prayerSourceType = "LOCAL")),
+                repository.getEffectivePrayerDateTimes(date, pending))
+            assertTrue(repository.getPrayerDataNotice(date, pending)!!.contains("Checking the prayer zone"))
+            assertEquals(0, server.requestCount)
+            val confirmed = pending.copy(automaticJakimZoneConfirmed = true)
+            assertNotEquals(pending.toPrayerNotificationScheduleConfig(), confirmed.toPrayerNotificationScheduleConfig())
+            server.enqueue(MockResponse().setBody(fixture()))
+            assertTrue(repository.hasOfficialTimetable(date, confirmed))
+            assertEquals("WLY01", server.takeRequest().requestUrl!!.queryParameter("zone"))
+            assertEquals("WLY01", pending.copy(automaticJakimZone = false).effectiveJakimZone)
+        } finally { server.shutdown() }
+    }
 }

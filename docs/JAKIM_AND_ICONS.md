@@ -2,7 +2,7 @@
 
 ## Select official Malaysian times
 
-In Prayer Settings, select **Official JAKIM / e-Solat (Malaysia)** as the source, then select the official zone covering your location. No zone is guessed from GPS or selected by default. The 60 codes and descriptions were copied from the official e-Solat selector on 2026-10-09. Check your zone against the official website, especially when travelling; changing GPS coordinates does not change the selected zone.
+In Prayer Settings, select **Official JAKIM / e-Solat (Malaysia)** as the source, then select the official zone covering your location. No zone is selected by default. The 60 codes and descriptions were copied from the official e-Solat selector on 2026-10-09. Manual mode remains the default; optional [GPS zone selection](AUTOMATIC_PRAYER_ZONE.md) uses a separate community service, with explicit opt-in and manual override. Check your zone against the official website, especially when travelling or visiting special/highland areas.
 
 Keep the five manual prayer offsets at zero to match published entries. Calculation convention and madhab controls are hidden for this source because the published timetable determines the times. AlAdhan's Malaysian calculation remains a separate option and retains its previously observed differences.
 
