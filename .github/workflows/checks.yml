@@ -89,7 +89,7 @@ jobs:
           printf 'no\n' | avdmanager create avd -n sukun-api30 -k "$ANDROID_TEST_IMAGE" --device pixel_2
           "$ANDROID_HOME/emulator/emulator" -list-avds | grep -Fx sukun-api30
           sudo chmod a+rw /dev/kvm
-          "$ANDROID_HOME/emulator/emulator" -avd sukun-api30 -no-window -no-audio -no-snapshot -no-metrics -gpu swiftshader -accel on -no-boot-anim -skin 480x800 > emulator.log 2>&1 &
+          "$ANDROID_HOME/emulator/emulator" -avd sukun-api30 -no-window -no-audio -no-snapshot -no-metrics -gpu swiftshader -accel on -memory 2048 -cores 2 -no-boot-anim -skin 480x800 > emulator.log 2>&1 &
           emulator_pid=$!
           for attempt in $(seq 1 120); do
             if ! kill -0 "$emulator_pid" 2>/dev/null; then
@@ -113,33 +113,36 @@ jobs:
         run: |
           python3 - <<'PYTHON'
           import pathlib, subprocess, xml.etree.ElementTree as ET
-          lines = []
-          log = pathlib.Path('emulator.log')
-          if log.exists():
-              lines.append('Emulator log tail:')
-              lines.extend(log.read_text(errors='replace').splitlines()[-60:])
+          def annotation(title, lines):
+              message = '\n'.join(lines)[-3500:]
+              message = message.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+              print('::error title=' + title + '::' + message)
+          reports = list(pathlib.Path('app/build/outputs/androidTest-results').rglob('*.xml'))
+          for report in reports:
+              try:
+                  root = ET.parse(report).getroot()
+                  for failure in root.iter('failure'):
+                      annotation('Android test failure', [str(report), failure.get('message', ''), failure.text or ''])
+              except ET.ParseError:
+                  pass
+          annotation('Android test reports', [str(p) for p in reports] or ['No test-result XML files: application tests may not have started.'])
           for command in [
               ['adb', 'devices', '-l'],
               ['adb', 'shell', 'getprop', 'sys.boot_completed'],
               ['adb', 'shell', 'service', 'check', 'package'],
               ['adb', 'shell', 'service', 'check', 'activity'],
-              ['adb', 'logcat', '-d', '-t', '80', '*:E'],
+              ['free', '-m'], ['df', '-h', '.'],
           ]:
               try:
                   result = subprocess.run(command, capture_output=True, text=True, timeout=15)
-                  lines.extend([' '.join(command), result.stdout, result.stderr])
+                  annotation('Android runner status', [' '.join(command), result.stdout, result.stderr])
               except subprocess.TimeoutExpired:
-                  lines.append('Timed out: ' + ' '.join(command))
-          for report in pathlib.Path('app/build/outputs/androidTest-results').rglob('*.xml'):
-              try:
-                  root = ET.parse(report).getroot()
-                  for failure in root.iter('failure'):
-                      lines.extend([str(report), failure.get('message', ''), failure.text or ''])
-              except ET.ParseError:
-                  pass
-          message = '\n'.join(lines)[-16000:]
-          message = message.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
-          print('::error title=Android failure diagnostics::' + message)
+                  annotation('Android runner status', ['Timed out: ' + ' '.join(command)])
+          log = pathlib.Path('emulator.log')
+          if log.exists():
+              lines = [line for line in log.read_text(errors='replace').splitlines()
+                       if 'pubkey' not in line and 'public key' not in line]
+              annotation('Emulator log tail', lines[-25:])
           PYTHON
       - name: Retain device evidence
         if: always()
