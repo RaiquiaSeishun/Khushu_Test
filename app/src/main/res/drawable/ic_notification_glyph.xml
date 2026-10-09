@@ -1,24 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sukun's independent ring mark; no upstream logo geometry. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="24dp"
-    android:height="24dp"
-    android:viewportWidth="24"
-    android:viewportHeight="24">
-    <!--
-        Native 24×24 viewport — paths converted from the original 108×108 adaptive-icon
-        coordinate space (with the 1.5× group scale baked in).
-        Formula: abs_start = old/3 − 6,  relative values = old/3,  strokeWidth = old/3.
-        Fills ~97% of the 24 dp canvas vs ~86% with the old viewport+group approach.
-    -->
-    <path
-        android:pathData="m22.183,12.337v5.883c0,1.163 -0.813,2.223 -2.097,2.780 -2.403,1.040 -5.160,1.633 -8.090,1.633s-5.683,-0.593 -8.087,-1.633c-1.283,-0.557 -2.097,-1.617 -2.097,-2.780v-5.883c0,-2.240 1.247,-4.267 3.237,-5.680 0.507,-0.360 1.060,-0.687 1.657,-0.960 0.003,0 0.010,0 0.010,-0.003 0.003,-0.003 0.010,-0.003 0.013,-0.003 0.243,-0.093 0.480,-0.193 0.710,-0.300 0.003,-0.003 0.010,-0.007 0.013,-0.007 1.767,-0.840 3.153,-2.130 3.910,-3.670 0.223,-0.457 1.040,-0.457 1.267,0 0.757,1.543 2.147,2.833 3.913,3.670 0.003,0 0.010,0.003 0.013,0.007 0.227,0.107 0.467,0.210 0.707,0.300l0.013,0.003s0.010,0.003 0.010,0.003c0.600,0.277 1.153,0.600 1.660,0.960 1.987,1.417 3.237,3.440 3.237,5.680Z"
-        android:strokeLineJoin="round"
-        android:strokeWidth="2.667"
-        android:fillColor="#00000000"
-        android:strokeColor="#FFFFFFFF"
-        android:strokeLineCap="round" />
-    <path
-        android:pathData="m15.757,13.483v8.793h-7.513v-8.793c0,-2.077 1.683,-3.757 3.757,-3.757 1.037,0 1.977,0.420 2.657,1.100 0.680,0.680 1.100,1.620 1.100,2.657Z"
-        android:strokeWidth="2.167"
-        android:fillColor="#00000000"
-        android:strokeColor="#FFFFFFFF" />
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="@android:color/transparent"
+        android:strokeColor="#FFFFFF" android:strokeWidth="7"
+        android:strokeLineCap="round"
+        android:pathData="M54,31 A18,18 0,1 1,54,67 A18,18 0,1 1,54,31 M36,78 L72,78" />
 </vector>

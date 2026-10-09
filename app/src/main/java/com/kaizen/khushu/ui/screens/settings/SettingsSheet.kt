@@ -68,8 +68,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 
-private const val KHUSHU_REPO_URL = "https://github.com/greykaizen/khushu"
-private const val KHUSHU_ISSUES_URL = "https://github.com/greykaizen/khushu/issues/new/choose"
+private const val KHUSHU_REPO_URL = "https://github.com/RaiquiaSeishun/Khushu_Test"
+private const val KHUSHU_ISSUES_URL = "https://github.com/RaiquiaSeishun/Khushu_Test/issues/new/choose"
 
 private enum class SettingsView {
     Main, History
@@ -289,7 +289,7 @@ private fun HistoryView(onBack: () -> Unit, onDismiss: () -> Unit) {
             contentAlignment = Alignment.Center
         ) {
             Text(
-                "History tracking coming soon to Khushu.",
+                "History tracking coming soon to Sukun.",
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
             )
@@ -318,7 +318,7 @@ private fun SettingsBrandingHeader(
             )
             Spacer(modifier = Modifier.width(18.dp))
             Text(
-                text = "Khushu",
+                text = "Sukun",
                 style = MaterialTheme.typography.headlineMedium.copy(
                     fontFamily = Antonio, 
                     fontSize = 28.sp,

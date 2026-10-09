@@ -39,7 +39,7 @@ object QuranScriptFontRepository {
         val conn = URL(UTHMANIC_HAFS_URL).openConnection() as HttpURLConnection
         conn.apply {
             requestMethod = "GET"
-            setRequestProperty("User-Agent", "KhushuApp/1.0")
+            setRequestProperty("User-Agent", "SukunApp/1.0")
             connectTimeout = 15_000
             readTimeout = 20_000
             connect()

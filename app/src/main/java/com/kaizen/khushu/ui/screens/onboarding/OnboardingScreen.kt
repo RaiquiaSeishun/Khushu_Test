@@ -267,7 +267,7 @@ private fun PageLocation(viewModel: SettingsViewModel, offset: Float) {
         Text("Your Presence", fontFamily = Antonio, fontSize = 42.sp, color = MaterialTheme.colorScheme.onBackground)
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "Accurate prayer times require your coordinates. Khushu can find them automatically or you can set them later.",
+            text = "Accurate prayer times require your coordinates. Sukun can find them automatically or you can set them later.",
             fontFamily = BeVietnamPro,
             fontSize = 16.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant

@@ -103,7 +103,7 @@ fun AppearanceSettingsScreen(
 
             SettingsGroup(
                 title = "Theme",
-//                description = "Control the overall look and startup behavior of Khushu."
+//                description = "Control the overall look and startup behavior of Sukun."
             ) {
                 Box(modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp)) {
                     SingleChoiceSegmentedButtonRow(
@@ -148,7 +148,7 @@ fun AppearanceSettingsScreen(
 
                 SettingsToggleItem(
                     title = "Keep Screen Awake",
-                    subtitle = "Prevent the screen from sleeping while Khushu is open.",
+                    subtitle = "Prevent the screen from sleeping while Sukun is open.",
                     checked = settings.keepScreenAwake,
                     onCheckedChange = viewModel::toggleKeepScreenAwake
                 )
@@ -163,7 +163,7 @@ fun AppearanceSettingsScreen(
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = "Choose which area opens first when Khushu launches.",
+                        text = "Choose which area opens first when Sukun launches.",
                         style = MaterialTheme.typography.bodyMedium.copy(fontFamily = BeVietnamPro),
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

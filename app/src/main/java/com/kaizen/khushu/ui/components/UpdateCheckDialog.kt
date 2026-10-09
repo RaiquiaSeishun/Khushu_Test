@@ -125,7 +125,7 @@ fun UpdateCheckDialog(
 
                     is UpdateCheckResult.UpToDate -> {
                         Text(
-                            text = "Khushu ${com.kaizen.khushu.BuildConfig.VERSION_NAME} is the latest version.",
+                            text = "Sukun ${com.kaizen.khushu.BuildConfig.VERSION_NAME} is the latest version.",
                             style = MaterialTheme.typography.bodyMedium,
                         )
                     }

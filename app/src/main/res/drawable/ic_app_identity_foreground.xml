@@ -1,4 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<inset xmlns:android="http://schemas.android.com/apk/res/android"
-    android:drawable="@drawable/ic_khushu_logo"
-    android:inset="18%" />
+<!-- Sukun's independent ring mark; no upstream logo geometry. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="@android:color/transparent"
+        android:strokeColor="#FFFFFF" android:strokeWidth="7"
+        android:strokeLineCap="round"
+        android:pathData="M54,31 A18,18 0,1 1,54,67 A18,18 0,1 1,54,31 M36,78 L72,78" />
+</vector>

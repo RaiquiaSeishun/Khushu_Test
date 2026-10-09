@@ -53,7 +53,7 @@ const val DEFAULT_CUSTOM_BEAD_STYLE_ID = "khushu_default_bead_style"
 fun defaultCustomBeadStyle(): CustomBeadStyle {
     return CustomBeadStyle(
         id = DEFAULT_CUSTOM_BEAD_STYLE_ID,
-        name = "Khushu Default",
+        name = "Sukun Default",
         shapeType = BeadShapeType.CIRCLE,
         baseColor = 0xFFD4850A,
         depthMode = BeadDepthMode.EMBOSS,

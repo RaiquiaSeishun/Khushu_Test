@@ -41,7 +41,7 @@ fun CounterSettingsScreen(
 
             SettingsGroup(
                 title = "Haptics",
-//                description = "Physical feedback that applies across Khushu counters."
+//                description = "Physical feedback that applies across Sukun counters."
             ) {
                 SettingsToggleItem(
                     title = "Haptic Feedback",

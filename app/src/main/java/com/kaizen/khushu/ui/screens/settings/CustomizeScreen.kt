@@ -72,7 +72,7 @@ fun CustomizeScreen(
 
             SettingsGroup(
                 title = "App Icon",
-//                description = "Choose how Khushu appears on your launcher."
+//                description = "Choose how Sukun appears on your launcher."
             ) {
                 Box(modifier = Modifier.padding(16.dp)) {
                     LogoStyleGrid(

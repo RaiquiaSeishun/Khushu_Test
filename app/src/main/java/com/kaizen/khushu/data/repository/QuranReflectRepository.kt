@@ -73,7 +73,7 @@ object QuranReflectRepository {
         conn.apply {
             requestMethod = "GET"
             setRequestProperty("Accept", "application/json")
-            setRequestProperty("User-Agent", "KhushuApp/1.0")
+            setRequestProperty("User-Agent", "SukunApp/1.0")
             connectTimeout = 8000
             readTimeout = 10000
             connect()

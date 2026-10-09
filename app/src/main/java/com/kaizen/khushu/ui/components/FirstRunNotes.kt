@@ -80,7 +80,7 @@ fun DeveloperWelcomeDialog(
                         fontWeight = FontWeight.Medium
                     )
                     Text(
-                        text = "Welcome aboard. Khushu is still early, and we are improving it over time with real feedback. If you run into a bug, have a feature request, or want to help with development, please check existing issues first and then report what you find.",
+                        text = "Welcome aboard. Sukun is still early, and we are improving it over time with real feedback. If you run into a bug, have a feature request, or want to help with development, please check existing issues first and then report what you find.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

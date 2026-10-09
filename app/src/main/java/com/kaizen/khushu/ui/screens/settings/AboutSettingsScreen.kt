@@ -40,8 +40,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.kaizen.khushu.BuildConfig
 
-private const val KHUSHU_REPO_URL = "https://github.com/greykaizen/khushu"
-private const val KHUSHU_ISSUES_URL = "https://github.com/greykaizen/khushu/issues/new/choose"
+private const val KHUSHU_REPO_URL = "https://github.com/RaiquiaSeishun/Khushu_Test"
+private const val KHUSHU_ISSUES_URL = "https://github.com/RaiquiaSeishun/Khushu_Test/issues/new/choose"
 private const val BTC_ADDRESS = "bc1q04zs40e9cakxuu2lw3r04jc2vmmv084rvz5kx9"
 private const val ETH_BASE_ADDRESS = "0x139aB14D67B1E0dAaEDe1CF5e3234B1Cc3644BE0"
 private const val USDT_TRON_ADDRESS = "TDmZvrFGBKyP9opEL1FCzpvH9MXBmJ9r6q"
@@ -72,7 +72,7 @@ fun AboutSettingsScreen(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             LargeTopAppBar(
-                title = { SettingsTopBarTitle("About Khushu", scrollBehavior) },
+                title = { SettingsTopBarTitle("About Sukun", scrollBehavior) },
                 navigationIcon = { SettingsBackButton(onBack) },
                 scrollBehavior = scrollBehavior
             )
@@ -90,7 +90,11 @@ fun AboutSettingsScreen(
 
             SectionHeader("Story")
             Text(
-                text = "Khushu is being built as a calmer kind of Muslim app: one that helps you return to salah, dhikr, and learning without turning worship into noise. The goal is not feature bloat. The goal is focus, clarity, and a product that feels intentional every time you open it.",
+                text = "Sukun is an unofficial, independently maintained fork of greykaizen/khushu. Improvements are AI-generated and reviewed with automated checks. Original copyrights and GPLv3 licensing are preserved. Device verification and limitations are documented in the repository.",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Text(
+                text = "Sukun is being built as a calmer kind of Muslim app: one that helps you return to salah, dhikr, and learning without turning worship into noise. The goal is not feature bloat. The goal is focus, clarity, and a product that feels intentional every time you open it.",
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -129,8 +133,8 @@ fun AboutSettingsScreen(
             )
 
             SettingsSectionCard(
-                title = "Support Khushu",
-                subtitle = "If Khushu has been useful to you, you can help keep it private, ad-free, and improving."
+                title = "Support the original Khushu developer",
+                subtitle = "These unchanged donation addresses belong to the upstream developer, not the Sukun fork."
             ) {
                 DonationAddressRow(
                     label = "Bitcoin",

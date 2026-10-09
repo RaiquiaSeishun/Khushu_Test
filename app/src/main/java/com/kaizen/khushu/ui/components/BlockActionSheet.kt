@@ -108,7 +108,7 @@ fun BlockActionSheet(
                     label = "Copy Text",
                     onClick = {
                         val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                        val clip = android.content.ClipData.newPlainText("Khushu Text", contentToCopy)
+                        val clip = android.content.ClipData.newPlainText("Sukun Text", contentToCopy)
                         clipboard.setPrimaryClip(clip)
                         Toast.makeText(context, "Text copied to clipboard", Toast.LENGTH_SHORT).show()
                         onDismiss()
@@ -122,7 +122,7 @@ fun BlockActionSheet(
                     label = "Copy Reference",
                     onClick = {
                         val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                        val clip = android.content.ClipData.newPlainText("Khushu Reference", referenceToCopy)
+                        val clip = android.content.ClipData.newPlainText("Sukun Reference", referenceToCopy)
                         clipboard.setPrimaryClip(clip)
                         Toast.makeText(context, "Reference copied: $referenceToCopy", Toast.LENGTH_SHORT).show()
                         onDismiss()

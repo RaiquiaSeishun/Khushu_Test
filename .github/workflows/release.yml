@@ -1,62 +1,67 @@
-name: Build and Sign Khushu Release
-
+name: Prepare signed Sukun release
 on:
-  push:
-    tags:
-      - 'v*'
-
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Reviewed release tag (for example v0.24.11)'
+        required: true
+        type: string
+permissions:
+  contents: read
 jobs:
-  build:
+  release:
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
         with:
-          java-version: '17'
-          distribution: 'zulu'
-          cache: 'gradle'
-
-      - name: Decode Keystore
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3
+      - name: Validate tag and signing requirements
         env:
-          ENCODED_STRING: ${{ secrets.SIGNING_KEY_STORE_BASE64 }}
-        run: |
-          echo "$ENCODED_STRING" | base64 --decode > keystore.p12
-
-      - name: Build and Sign APK
-        env:
-          ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
-          KEYSTORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+          RELEASE_TAG: ${{ inputs.tag }}
+          KEYSTORE_DATA: ${{ secrets.SIGNING_KEY_STORE_BASE64 }}
+          KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
         run: |
-          ./gradlew assembleFdroidRelease \
-            -Pandroid.injected.signing.store.file=${{ github.workspace }}/keystore.p12 \
-            -Pandroid.injected.signing.store.password=$KEYSTORE_PASSWORD \
-            -Pandroid.injected.signing.key.alias=$ALIAS \
-            -Pandroid.injected.signing.key.password=$KEY_PASSWORD
-
-      - name: Secure Shred Keystore
+          set -euo pipefail
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          grep -F "versionName = \"${RELEASE_TAG#v}\"" app/build.gradle.kts
+          [[ -n "$KEYSTORE_DATA" && -n "$KEY_ALIAS" && -n "$STORE_PASSWORD" && -n "$KEY_PASSWORD" ]]
+          umask 077
+          printf '%s' "$KEYSTORE_DATA" | base64 --decode > "$RUNNER_TEMP/sukun-signing.p12"
+      - name: Check and build signed APK
+        env:
+          KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
+          bash gradlew --max-workers=4 :app:testFullDebugUnitTest :app:testFdroidDebugUnitTest :app:lintFullDebug :app:lintFdroidDebug :app:assembleFullRelease :app:assembleFdroidRelease \
+            -Pkhushu.singleApk=true \
+            -Pandroid.injected.signing.store.file="$RUNNER_TEMP/sukun-signing.p12" \
+            -Pandroid.injected.signing.store.password="$STORE_PASSWORD" \
+            -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
+            -Pandroid.injected.signing.key.password="$KEY_PASSWORD"
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose app/build/outputs/apk/full/release/app-full-release.apk
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose app/build/outputs/apk/fdroid/release/app-fdroid-release.apk
+      - name: Remove temporary signing material
         if: always()
-        run: shred -u keystore.p12
-
-      - name: Create GitHub Release
+        run: rm -f "$RUNNER_TEMP/sukun-signing.p12"
+      - name: Prepare draft release in this repository
         env:
           GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
         run: |
-          # Rename universal APK to maintain F-Droid reproducible build compatibility
-          if [ -f app/build/outputs/apk/fdroid/release/app-fdroid-universal-release.apk ]; then
-            mv app/build/outputs/apk/fdroid/release/app-fdroid-universal-release.apk app/build/outputs/apk/fdroid/release/app-fdroid-release.apk
-          fi
-          if [ -f app/build/outputs/apk/fdroid/release/app-fdroid-universal-release-unsigned.apk ]; then
-            mv app/build/outputs/apk/fdroid/release/app-fdroid-universal-release-unsigned.apk app/build/outputs/apk/fdroid/release/app-fdroid-release-unsigned.apk
-          fi
-
-          tag_name="${GITHUB_REF#refs/tags/}"
-          gh release create "$tag_name" \
-            --title "Khushu $tag_name" \
-            --generate-notes \
-            app/build/outputs/apk/fdroid/release/*.apk
+          set -euo pipefail
+          cp app/build/outputs/apk/full/release/app-full-release.apk "sukun-full-$RELEASE_TAG.apk"
+          cp app/build/outputs/apk/fdroid/release/app-fdroid-release.apk "sukun-fdroid-$RELEASE_TAG.apk"
+          sha256sum "sukun-full-$RELEASE_TAG.apk" "sukun-fdroid-$RELEASE_TAG.apk" > "sukun-$RELEASE_TAG.sha256"
+          gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+            --draft --title "Sukun $RELEASE_TAG" --generate-notes \
+            "sukun-full-$RELEASE_TAG.apk" "sukun-fdroid-$RELEASE_TAG.apk" "sukun-$RELEASE_TAG.sha256"
