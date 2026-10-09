@@ -1,5 +1,15 @@
 # Validation evidence
 
+## Guided Prayer removal and visible Home shortcuts — 0.24.15
+
+Guided Prayer screens, editor, presets and renderers were removed along with their navigation routes, Pray tab, startup choice, customization entry and onboarding promotion. Existing stored Pray startup choices fall back to Home. Only legacy persisted model definitions and tables remain to keep the shared CanvasDatabase compatible with existing installations; no Guided Prayer UI or renderer remains reachable. Daily prayer tracking, Tasbih, Study, icon customization and prayer-data logic remain available.
+
+Home now puts Qibla, Mosques and Events directly under the prayer-time card, ahead of source notices and upcoming events. The scroll-dependent reveal rule and forced viewport-height prayer panel were removed. The Events jump accounts for the optional source card, and bottom content padding keeps later content clear of navigation. Mosques remains a Soon placeholder.
+
+Local feature fdroid validation built the app and Android test APK, passed 32 JVM tests with 0 failures/errors/skips and completed lint with 0 errors/fatal issues (existing warnings remain). Two new Android regressions exercise a persisted legacy startup choice, initial shortcut visibility above bottom navigation, opening the Qibla compass, absence of Guided Prayer customization and jumping to Events with a JAKIM fallback source note. Local log: `/workspace/downloads/home-simplification-final-validation.log`. The initial CI attempt failed the new visibility checks on the existing 480×800 skin with Pixel 2 density; the follow-up explicitly sets 200 dpi for a representative 384×640 dp phone viewport, retaining the assertions and adding display diagnostics. Physical phone, large-text and landscape checks remain in [PHONE_TESTING.md](PHONE_TESTING.md).
+
+[Run 38003148731](https://github.com/RaiquiaSeishun/Khushu_Test/actions/runs/38003148731) passed at application/workflow commit `7127a572c836e834c78a18ccd8301d3378d250f9`: both-distribution build/JVM/lint checks, connected Android tests on API 30/35 (including the new Home checks) and data-preserving APK update checks, retained-key signing/verification and artifact upload. [Download the Home update ZIP](https://github.com/RaiquiaSeishun/Khushu_Test/actions/runs/38003148731/artifacts/11650685652); test version code 100018, production baseline 89 / 0.24.15. Install over the current retained-key Sukun Test app. CI evidence: `/workspace/downloads/home-simplification-ci-validation.json`. The earlier failed run is diagnostic evidence rather than passing validation.
+
 ## Prayer source status card — 0.24.14
 
 Home now presents source information in a compact card with optional Details. Valid official and cached timetables use a neutral surface; approximate fallback times remain explicit in the visible summary. Unconfirmed automatic zone selection shows the GPS status in Details without also instructing the user to choose a manual zone. Manual time adjustments remain visible in the summary. No prayer calculation, GPS lookup, signing identity or application ID behavior changed.
