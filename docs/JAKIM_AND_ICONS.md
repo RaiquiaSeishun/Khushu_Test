@@ -16,11 +16,11 @@ Recorded, unmodified e-Solat responses for WLY01 in January and October 2026 and
 
 ## Icon customization
 
-The launcher switcher previously constructed alias class names from the installed application ID. Sukun's Kotlin namespace remains `com.kaizen.khushu`, so those names did not match the manifest. It now uses the actual MainActivity namespace and the installed package separately.
+The launcher switcher previously constructed alias class names from the installed application ID. Sukun's Kotlin namespace remains `com.kaizen.khushu`, so those names did not match the manifest. This mismatch was introduced by the earlier Sukun application-ID rebrand. It now uses the actual MainActivity namespace and the installed package separately.
 
 Android 13 and later update the alias states as one batch. Android 11–12 enable the replacement before disabling other aliases. Both paths keep the application running. Invalid styles are rejected before changing any component. The saved selection is restored when the app starts, and Settings persists a selection only after a successful switch. Instrumented tests switch all four styles, require one launcher entry, open each actual alias, recreate the activity, check persistence, compare the rendered icons, and ensure invalid input cannot remove the launcher.
 
-Launchers may cache icons briefly. With launcher themed icons enabled, Android can use the common monochrome mark and wallpaper colors instead of the chosen background. Physical launcher behavior remains a phone check.
+Launchers may cache icons briefly. With launcher themed icons enabled, Android can use the common monochrome mark and wallpaper colors instead of the chosen background. Activity tests grant notification permission first on Android 13+ so the operating-system consent dialog does not pause the tested activity. No icon or lifecycle assertions are disabled. Physical launcher behavior remains a phone check.
 
 ## Install this test build
 
