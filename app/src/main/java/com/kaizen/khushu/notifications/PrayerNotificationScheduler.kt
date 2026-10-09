@@ -27,6 +27,8 @@ data class PrayerNotificationScheduleConfig(
     val locationLng: Float,
     val useGpsLocation: Boolean,
     val prayerSourceType: String,
+    val jakimZone: String,
+    val lastPrayerRefreshEpochMs: Long,
     val fajrOffsetMinutes: Int,
     val dhuhrOffsetMinutes: Int,
     val asrOffsetMinutes: Int,
@@ -59,6 +61,8 @@ fun UserSettings.toPrayerNotificationScheduleConfig(): PrayerNotificationSchedul
         locationLng = locationLng,
         useGpsLocation = useGpsLocation,
         prayerSourceType = prayerSourceType,
+        jakimZone = jakimZone,
+        lastPrayerRefreshEpochMs = lastPrayerRefreshEpochMs,
         fajrOffsetMinutes = fajrOffsetMinutes,
         dhuhrOffsetMinutes = dhuhrOffsetMinutes,
         asrOffsetMinutes = asrOffsetMinutes,
@@ -105,7 +109,8 @@ class PrayerNotificationScheduler(
         )
 
         for (anchor in datesToSchedule) {
-            val targetDate = anchor.resolve()
+            val targetDate = if (anchor == DateAnchor.Tomorrow) com.kaizen.khushu.data.repository.nextPrayerDate(Date(now), currentSettings) else Date(now)
+            if (!prayerTimeRepository.hasOfficialTimetable(targetDate, currentSettings)) continue
             val prayerTimes = prayerTimeRepository.getEffectivePrayerDateTimes(
                 date = targetDate,
                 settings = currentSettings
@@ -160,6 +165,7 @@ class PrayerNotificationScheduler(
         val currentSettings = settings ?: settingsRepository.settingsFlow.first()
         if (!hasAnyNotificationEnabled(currentSettings)) return
 
+        if (!prayerTimeRepository.hasOfficialTimetable(Date(nowMillis), currentSettings)) return
         val prayerTimes = prayerTimeRepository.getEffectivePrayerDateTimes(
             date = Date(nowMillis),
             settings = currentSettings
@@ -394,19 +400,7 @@ class PrayerNotificationScheduler(
         return "%04d%02d%02d".format(year, month, day)
     }
 
-    private enum class DateAnchor {
-        Today,
-        Tomorrow;
-
-        fun resolve(): Date {
-            val calendar = Calendar.getInstance().apply {
-                if (this@DateAnchor == Tomorrow) {
-                    add(Calendar.DAY_OF_YEAR, 1)
-                }
-            }
-            return calendar.time
-        }
-    }
+    private enum class DateAnchor { Today, Tomorrow }
 
     companion object {
         const val CHANNEL_SYSTEM_SOUND = "prayer_reminders_system_sound_v2"

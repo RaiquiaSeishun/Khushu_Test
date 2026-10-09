@@ -12,6 +12,7 @@ import com.kaizen.khushu.data.repository.PrayerTimeRepository
 import com.kaizen.khushu.data.repository.SettingsRepository
 import com.kaizen.khushu.logic.PrayerManager
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -69,7 +70,7 @@ class HomeViewModel(
                 lastPrayerRefreshEpochMs = settings.lastPrayerRefreshEpochMs,
                 locationLat = settings.locationLat,
                 locationLng = settings.locationLng,
-                calculationSource = if (isApiSource) CalculationSource.API else CalculationSource.LOCAL
+                calculationSource = if (settings.prayerSourceType == "JAKIM") CalculationSource.JAKIM else if (isApiSource) CalculationSource.API else CalculationSource.LOCAL
             )
         }
 
@@ -342,11 +343,8 @@ class HomeViewModel(
             locationLat = settings.locationLat,
             locationLng = settings.locationLng,
             locationLabel = settings.locationLabel,
-            calculationSource = if (isApiSource) CalculationSource.API else CalculationSource.LOCAL,
-            prayerDataWarning = if (isApiSource) prayerTimeRepository.lastApiError
-                else if (!prayerTimeRepository.supportsLocalCalculationMethod(settings.prayerCalculationMethod))
-                    "Selected convention needs internet. Using approximate Muslim World League times offline."
-                else null,
+            calculationSource = if (settings.prayerSourceType == "JAKIM") CalculationSource.JAKIM else if (isApiSource) CalculationSource.API else CalculationSource.LOCAL,
+            prayerDataWarning = prayerTimeRepository.getPrayerDataNotice(effectiveDate, settings),
             showExtraPrayerTimingsOnHome = settings.showExtraPrayerTimingsOnHome,
             showUpcomingEventsOnHome = settings.showUpcomingEventsOnHome
         )
@@ -362,6 +360,7 @@ class HomeViewModel(
         refreshStartedAtMillis = System.currentTimeMillis()
         _isRefreshing.value = true
         viewModelScope.launch {
+            prayerTimeRepository.refreshOfficialTimetable(Date(), settingsRepository.settingsFlow.first())
             settingsRepository.updateLastPrayerRefresh(System.currentTimeMillis())
             if (uiState.value.calculationSource == CalculationSource.LOCAL && _isRefreshing.value) {
                 completeRefreshWithMinimumDuration()

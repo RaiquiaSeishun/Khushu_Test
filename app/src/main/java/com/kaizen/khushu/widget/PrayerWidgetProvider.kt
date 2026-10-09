@@ -79,7 +79,10 @@ class PrayerWidgetProvider : AppWidgetProvider() {
 
                     // 2. LOCATION
                     val locationName = settings.locationLabel.ifBlank { resolveLocationLabel(context, settings) }
-                    views.setTextViewText(R.id.text_location, locationName)
+                    views.setTextViewText(R.id.text_location, if (settings.prayerSourceType == "JAKIM") {
+                        if (prayerTimeRepository.hasOfficialTimetable(nowDate, settings)) "JAKIM ${settings.jakimZone}"
+                        else "Approximate fallback · JAKIM unavailable"
+                    } else locationName)
 
                     // 3. PRAYER TIMES
                     val effectiveTimes = prayerTimeRepository.getEffectivePrayerDateTimes(nowDate, settings)
@@ -123,7 +126,7 @@ class PrayerWidgetProvider : AppWidgetProvider() {
                         nextPrayerTimeMs = nextToday.second
                     } else {
                         nextPrayerName = "Fajr"
-                        val tomorrow = Date(nowMs + 86400000L)
+                        val tomorrow = com.kaizen.khushu.data.repository.nextPrayerDate(nowDate, settings)
                         val tomorrowTimes = prayerTimeRepository.getEffectivePrayerDateTimes(tomorrow, settings)
                         nextPrayerTimeMs = tomorrowTimes["Fajr"]?.time ?: 0L
                     }

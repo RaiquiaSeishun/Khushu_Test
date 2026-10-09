@@ -7,7 +7,7 @@ import androidx.compose.ui.graphics.Color
 import kotlinx.datetime.Instant
 
 // ── Placeholder data — to be replaced by HomeViewModel + real prayer times ──
-enum class CalculationSource { LOCAL, API }
+enum class CalculationSource { LOCAL, API, JAKIM }
 
 enum class HomeQuickAction {
     QIBLA,

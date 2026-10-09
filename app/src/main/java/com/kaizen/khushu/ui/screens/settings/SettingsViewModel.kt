@@ -433,6 +433,10 @@ class SettingsViewModel(
         viewModelScope.launch { repository.updateUseGpsLocation(enabled) }
     }
 
+    fun setJakimZone(zone: String) {
+        viewModelScope.launch { repository.updateJakimZone(zone) }
+    }
+
     fun setPrayerSourceType(source: String) {
         viewModelScope.launch { repository.updatePrayerSourceType(source) }
     }

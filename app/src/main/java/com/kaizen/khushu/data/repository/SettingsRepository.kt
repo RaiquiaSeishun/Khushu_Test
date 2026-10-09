@@ -17,6 +17,7 @@ import java.io.IOException
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
 class SettingsRepository(private val context: Context) {
+    internal val jakimCacheDirectory get() = java.io.File(context.filesDir, "jakim-timetables")
     internal val prayerCacheDirectory get() = java.io.File(context.cacheDir, "prayer-times")
 
     private object PreferencesKeys {
@@ -90,6 +91,7 @@ class SettingsRepository(private val context: Context) {
         val LOCATION_ACCURACY = floatPreferencesKey("location_accuracy_meters")
         val LOCATION_REFRESH_INTERVAL = intPreferencesKey("location_refresh_interval_minutes")
         val USE_GPS_LOCATION = booleanPreferencesKey("use_gps_location")
+        val JAKIM_ZONE = stringPreferencesKey("jakim_zone")
         val PRAYER_SOURCE_TYPE = stringPreferencesKey("prayer_source_type")
         val PRAYER_OFFSET_FAJR = intPreferencesKey("prayer_offset_fajr")
         val PRAYER_OFFSET_DHUHR = intPreferencesKey("prayer_offset_dhuhr")
@@ -215,6 +217,7 @@ class SettingsRepository(private val context: Context) {
                 lastLocationFixEpochMs = preferences[PreferencesKeys.LAST_LOCATION_FIX] ?: 0L,
                 locationAccuracyMeters = preferences[PreferencesKeys.LOCATION_ACCURACY] ?: 0f,
                 locationRefreshIntervalMinutes = preferences[PreferencesKeys.LOCATION_REFRESH_INTERVAL] ?: 60,
+                jakimZone = preferences[PreferencesKeys.JAKIM_ZONE] ?: "",
                 prayerSourceType = preferences[PreferencesKeys.PRAYER_SOURCE_TYPE] ?: "LOCAL",
                 fajrOffsetMinutes = preferences[PreferencesKeys.PRAYER_OFFSET_FAJR] ?: 0,
                 dhuhrOffsetMinutes = preferences[PreferencesKeys.PRAYER_OFFSET_DHUHR] ?: 0,
@@ -314,7 +317,13 @@ class SettingsRepository(private val context: Context) {
         context.dataStore.edit { it[PreferencesKeys.USE_GPS_LOCATION] = enabled }
     }
 
+    suspend fun updateJakimZone(zone: String) {
+        require(zone.isEmpty() || zone in JakimZones.labels)
+        context.dataStore.edit { it[PreferencesKeys.JAKIM_ZONE] = zone }
+    }
+
     suspend fun updatePrayerSourceType(source: String) {
+        require(source in setOf("LOCAL", "API", "JAKIM"))
         context.dataStore.edit { it[PreferencesKeys.PRAYER_SOURCE_TYPE] = source }
     }
 
@@ -680,6 +689,7 @@ data class UserSettings(
     val locationAccuracyMeters: Float = 0f,
     val locationRefreshIntervalMinutes: Int = 60,
     val prayerSourceType: String = "LOCAL",
+    val jakimZone: String = "",
     val fajrOffsetMinutes: Int = 0,
     val dhuhrOffsetMinutes: Int = 0,
     val asrOffsetMinutes: Int = 0,

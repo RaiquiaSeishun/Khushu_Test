@@ -35,6 +35,10 @@ data class AlAdhanData(val timings: Map<String, String>)
 internal fun nextPrayerDate(date: Date): Date =
     Calendar.getInstance().apply { time = date; add(Calendar.DAY_OF_MONTH, 1) }.time
 
+fun nextPrayerDate(date: Date, settings: UserSettings): Date =
+    if (settings.prayerSourceType == "JAKIM") Date.from(JakimTimetableRepository.localDate(date).plusDays(1)
+        .atStartOfDay(JakimTimetableRepository.timeZone).toInstant()) else nextPrayerDate(date)
+
 class PrayerTimeRepository(
     private val cacheDirectory: java.io.File?,
     private val client: OkHttpClient = OkHttpClient.Builder()
@@ -43,8 +47,13 @@ class PrayerTimeRepository(
         .callTimeout(25, TimeUnit.SECONDS)
         .build(),
     private val apiBaseUrl: String = "https://api.aladhan.com/v1",
+    private val jakim: JakimTimetableRepository = JakimTimetableRepository(cacheDirectory?.let { java.io.File(it, "jakim") }, client),
 ) {
-    constructor(settingsRepository: SettingsRepository) : this(settingsRepository.prayerCacheDirectory)
+    constructor(settingsRepository: SettingsRepository) : this(
+        settingsRepository.prayerCacheDirectory,
+        jakim = JakimTimetableRepository(settingsRepository.jakimCacheDirectory, OkHttpClient.Builder()
+            .connectTimeout(10, TimeUnit.SECONDS).readTimeout(15, TimeUnit.SECONDS).callTimeout(25, TimeUnit.SECONDS).build()),
+    )
     var lastApiError: String? = null
         private set
 
@@ -54,7 +63,7 @@ class PrayerTimeRepository(
     private val json = Json { ignoreUnknownKeys = true }
 
     fun usesApiSource(settings: UserSettings): Boolean {
-        return settings.prayerSourceType == "API"
+        return settings.prayerSourceType in setOf("API", "JAKIM")
     }
 
     fun supportsLocalCalculationMethod(methodStr: String): Boolean =
@@ -87,7 +96,15 @@ class PrayerTimeRepository(
         date: Date,
         settings: UserSettings
     ): Map<String, Date> {
-        val isApiSource = usesApiSource(settings)
+        if (settings.prayerSourceType == "JAKIM") {
+            val official = jakim.get(date, settings.jakimZone).times
+            if (official != null) {
+                val offsets = mapOf("Fajr" to settings.fajrOffsetMinutes, "Dhuhr" to settings.dhuhrOffsetMinutes,
+                    "Asr" to settings.asrOffsetMinutes, "Maghrib" to settings.maghribOffsetMinutes, "Isha" to settings.ishaOffsetMinutes)
+                return offsets.mapValues { (name, offset) -> Date(official.getValue(name).time + offset * 60_000L) }
+            }
+        }
+        val isApiSource = settings.prayerSourceType == "API"
         val localPrayerTimes = getLocalPrayerTimes(
             date = date,
             lat = settings.locationLat.toDouble(),
@@ -146,7 +163,24 @@ class PrayerTimeRepository(
         date: Date,
         settings: UserSettings
     ): Map<String, Date> {
-        val isApiSource = usesApiSource(settings)
+        if (settings.prayerSourceType == "JAKIM") {
+            val official = jakim.get(date, settings.jakimZone).times
+            if (official != null) {
+                val nextDate = Date.from(JakimTimetableRepository.localDate(date).plusDays(1)
+                    .atStartOfDay(JakimTimetableRepository.timeZone).toInstant())
+                val result = mutableMapOf("IMSAK" to official.getValue("Imsak"), "SUNRISE" to official.getValue("Sunrise"),
+                    "SUNSET" to official.getValue("Maghrib"))
+                val nextFajr = jakim.get(nextDate, settings.jakimZone).times?.get("Fajr")
+                if (nextFajr != null) {
+                    val sunset = official.getValue("Maghrib")
+                    val night = nextFajr.time - sunset.time
+                    result += mapOf("FIRST_THIRD" to Date(sunset.time + night / 3),
+                        "MIDNIGHT" to Date(sunset.time + night / 2), "LAST_THIRD" to Date(sunset.time + night * 2 / 3))
+                }
+                return result
+            }
+        }
+        val isApiSource = settings.prayerSourceType == "API"
         val localPrayerTimes = getLocalPrayerTimes(
             date = date,
             lat = settings.locationLat.toDouble(),
@@ -209,6 +243,24 @@ class PrayerTimeRepository(
             "MIDNIGHT" to if (isApiSource) parseApiTime("Midnight", localMidnight) else localMidnight,
             "LAST_THIRD" to if (isApiSource) parseApiTime("Lastthird", localLastThird) else localLastThird,
         )
+    }
+
+    suspend fun hasOfficialTimetable(date: Date, settings: UserSettings): Boolean =
+        settings.prayerSourceType != "JAKIM" || jakim.get(date, settings.jakimZone).times != null
+
+    suspend fun refreshOfficialTimetable(date: Date, settings: UserSettings) {
+        if (settings.prayerSourceType == "JAKIM") jakim.get(date, settings.jakimZone, forceRefresh = true)
+    }
+
+    suspend fun getPrayerDataNotice(date: Date, settings: UserSettings): String? {
+        if (settings.prayerSourceType != "JAKIM") return if (settings.prayerSourceType == "API") lastApiError
+            else if (!supportsLocalCalculationMethod(settings.prayerCalculationMethod))
+                "Selected convention needs internet. Using approximate Muslim World League times offline."
+            else null
+        val result = jakim.get(date, settings.jakimZone)
+        val adjusted = listOf(settings.fajrOffsetMinutes, settings.dhuhrOffsetMinutes, settings.asrOffsetMinutes,
+            settings.maghribOffsetMinutes, settings.ishaOffsetMinutes).any { it != 0 }
+        return result.notice + if (adjusted && result.times != null) " Manual offsets are active; displayed times differ from the official entries." else ""
     }
 
     suspend fun getFallbackPrayerTimes(

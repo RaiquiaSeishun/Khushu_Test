@@ -880,6 +880,7 @@ fun PrayerSunMergedCard(
                 when (source) {
                         CalculationSource.LOCAL -> "Local"
                         CalculationSource.API -> "API"
+                        CalculationSource.JAKIM -> "JAKIM"
                 }
 
         // Night detection: use makruh zones to determine sunrise/sunset boundaries
@@ -2054,6 +2055,7 @@ fun NextPrayerCard(
                 when (source) {
                         CalculationSource.LOCAL -> "Local"
                         CalculationSource.API -> "API"
+                        CalculationSource.JAKIM -> "JAKIM"
                 }
 
         LaunchedEffect(Unit) {

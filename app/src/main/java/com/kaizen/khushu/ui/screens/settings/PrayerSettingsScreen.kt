@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import com.kaizen.khushu.data.repository.JakimZones
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.MyLocation
@@ -96,6 +97,7 @@ private val madhabLabels = mapOf(
 )
 
 private val sourceLabels = mapOf(
+    "JAKIM" to "Official JAKIM / e-Solat (Malaysia)",
     "LOCAL" to "Local Formula (Offline)",
     "API" to "AlAdhan API (Online)"
 )
@@ -202,7 +204,7 @@ fun PrayerSettingsScreen(
         "PORTUGAL", "JORDAN", "FRANCE_15", "FRANCE_18"
     )
     val madhabs = listOf("SHAFI", "HANAFI")
-    val sources = listOf("LOCAL", "API")
+    val sources = listOf("LOCAL", "API", "JAKIM")
     val alertStyleOptions = listOf("CUSTOM_SOUND", "SYSTEM_SOUND", "VIBRATION", "SILENT")
     val eventPerspectiveOptions = listOf("UNIVERSAL", "SUNNI", "SHIA", "ALL")
     val prayerNotificationPreferences = listOf(
@@ -244,6 +246,7 @@ fun PrayerSettingsScreen(
                 title = "Calculation",
 //                description = "How Sukun computes the daily prayer times."
             ) {
+                if (settings.prayerSourceType != "JAKIM") {
                 Box(modifier = Modifier.padding(horizontal = 20.dp)) {
                     SettingsDropdown(
                         title = "Convention",
@@ -266,6 +269,7 @@ fun PrayerSettingsScreen(
                     )
                 }
 
+                }
                 Box(modifier = Modifier.padding(horizontal = 20.dp)) {
                     SettingsDropdown(
                         title = "Source",
@@ -276,10 +280,24 @@ fun PrayerSettingsScreen(
                         onOptionSelected = viewModel::setPrayerSourceType
                     )
                 }
+                if (settings.prayerSourceType == "JAKIM") {
+                    Box(modifier = Modifier.padding(horizontal = 20.dp)) {
+                        SettingsDropdown(
+                            title = "Official prayer zone",
+                            subtitle = "Select the zone covering your location. GPS does not select or change it.",
+                            options = listOf("") + JakimZones.labels.keys,
+                            selectedOption = settings.jakimZone,
+                            optionLabel = { JakimZones.labels[it] ?: "Select your zone" },
+                            onOptionSelected = viewModel::setJakimZone,
+                        )
+                    }
+                }
             }
 
             Text(
-                text = if (settings.prayerSourceType == "API")
+                text = if (settings.prayerSourceType == "JAKIM")
+                    "Uses official e-Solat entries for your selected zone in Malaysia time. Downloads a full month for offline use and checks for revisions once a day. Only zone and dates are sent; GPS coordinates are not sent. Keep offsets at zero to match the official timetable. If no valid cached timetable exists, an approximate local fallback is clearly reported on Home."
+                else if (settings.prayerSourceType == "API")
                     "Online mode sends coordinates, date, method, madhab and time zone to AlAdhan over HTTPS. Results are cached for 24 hours. If unavailable, approximate local times are used. Malaysian results are calculations, not verified official zone timetables."
                 else if (!PrayerCalculationPolicy.supportsLocalMethod(settings.prayerCalculationMethod))
                     "This convention requires online calculation. Local mode stays offline and uses the Muslim World League convention instead; these are approximate fallback times. Select Online to use the selected convention."

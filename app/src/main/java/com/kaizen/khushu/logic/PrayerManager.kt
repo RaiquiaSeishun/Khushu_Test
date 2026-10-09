@@ -66,7 +66,7 @@ class PrayerManager(
                     val nextTime = if (nextTodayName != null) {
                         effectiveTimes[nextTodayName]
                     } else {
-                        val tomorrow = nextPrayerDate(date)
+                        val tomorrow = nextPrayerDate(date, settings)
                         val tomorrowTimes = prayerRepository.getEffectivePrayerDateTimes(tomorrow, settings)
                         tomorrowTimes["Fajr"]?.let { Instant.fromEpochMilliseconds(it.time) }
                     } ?: timings.fajr
