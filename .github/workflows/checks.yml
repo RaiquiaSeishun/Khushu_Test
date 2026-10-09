@@ -52,8 +52,13 @@ jobs:
           set -euo pipefail
           printf 'no\n' | avdmanager create avd -n sukun-api30 -k 'system-images;android-30;default;x86_64' --device pixel_2
           sudo chmod a+rw /dev/kvm
-          emulator -avd sukun-api30 -no-window -no-audio -no-snapshot -no-metrics -gpu swiftshader -accel on -no-boot-anim -skin 480x800 > emulator.log 2>&1 &
+          "$ANDROID_HOME/emulator/emulator" -avd sukun-api30 -no-window -no-audio -no-snapshot -no-metrics -gpu swiftshader -accel on -no-boot-anim -skin 480x800 > emulator.log 2>&1 &
+          emulator_pid=$!
           for attempt in $(seq 1 120); do
+            if ! kill -0 "$emulator_pid" 2>/dev/null; then
+              cat emulator.log
+              exit 1
+            fi
             if [[ "$(adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" == 1 ]] &&
                [[ "$(adb shell service check package 2>/dev/null | tr -d '\r')" == 'Service package: found' ]] &&
                [[ "$(adb shell service check activity 2>/dev/null | tr -d '\r')" == 'Service activity: found' ]]; then break; fi
