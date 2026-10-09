@@ -26,6 +26,25 @@ jobs:
         run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0'
       - name: Test, build, and lint both distributions
         run: bash gradlew --max-workers=4 :app:testFullDebugUnitTest :app:testFdroidDebugUnitTest :app:assembleFullDebug :app:assembleFdroidDebug :app:lintFullDebug :app:lintFdroidDebug
+      - name: Prepare phone-test download
+        run: |
+          set -euo pipefail
+          test_apk=app/build/outputs/apk/fdroid/debug/app-fdroid-universal-debug.apk
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose "$test_apk"
+          mkdir -p "$RUNNER_TEMP/sukun-phone-test"
+          cp "$test_apk" "$RUNNER_TEMP/sukun-phone-test/sukun-fdroid-debug.apk"
+          cp docs/PHONE_TESTING.md "$RUNNER_TEMP/sukun-phone-test/PHONE_TESTING.md"
+          printf '%s\n' "$GITHUB_SHA" > "$RUNNER_TEMP/sukun-phone-test/source-commit.txt"
+          cd "$RUNNER_TEMP/sukun-phone-test"
+          sha256sum sukun-fdroid-debug.apk > SHA256SUMS
+      - name: Upload phone-test APK
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: sukun-phone-test
+          path: ${{ runner.temp }}/sukun-phone-test/
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 30
       - name: Retain test and lint evidence
         if: always()
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5

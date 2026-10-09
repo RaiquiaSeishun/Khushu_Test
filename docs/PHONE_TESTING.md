@@ -2,7 +2,11 @@
 
 Use a development APK for these checks. It is debug-signed, not a production release. Android 11 or newer is required. Sukun installs separately from Khushu and starts with separate app data.
 
-Install the fdroid universal debug APK using Android's package installer, or with a connected computer:
+Download the `sukun-phone-test` artifact from a successful **Sukun checks** run on the repository's [GitHub Actions page](https://github.com/RaiquiaSeishun/Khushu_Test/actions/workflows/checks.yml). GitHub requires you to sign in to download Actions artifacts. On a phone, open the run in your browser and use desktop-site mode if the artifact section is hidden.
+
+The download is a ZIP file. Extract it, then open `sukun-fdroid-debug.apk` and allow installation from your browser or file manager if Android prompts you. The archive also includes a checksum, source commit, and this checklist. Artifacts expire after 30 days; a new successful run produces a fresh download. This is a test build, not an F-Droid listing or production release.
+
+Alternatively, install with a connected computer:
 
 ```sh
 adb install -r sukun-fdroid-debug.apk
