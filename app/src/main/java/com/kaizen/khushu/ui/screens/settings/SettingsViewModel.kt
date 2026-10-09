@@ -457,8 +457,10 @@ class SettingsViewModel(
     }
 
     private fun resolveAutomaticZone(current: UserSettings) {
+        val hasPermission = listOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
+            .any { ContextCompat.checkSelfPermission(appContext, it) == PackageManager.PERMISSION_GRANTED }
         if (zoneJob?.isActive == true || !current.automaticJakimZone || !current.useGpsLocation ||
-            current.prayerSourceType != "JAKIM" || current.lastLocationFixEpochMs <= 0 ||
+            !hasPermission || current.prayerSourceType != "JAKIM" || current.lastLocationFixEpochMs <= 0 ||
             System.currentTimeMillis() - current.lastLocationFixEpochMs !in 0..LocationFixPolicy.MAX_AGE_MS) return
         zoneJob = viewModelScope.launch {
             val result = zoneLocator.locate(current.locationLat.toDouble(), current.locationLng.toDouble(), current.locationAccuracyMeters)
