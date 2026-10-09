@@ -1,5 +1,13 @@
 # Validation evidence
 
+## Remove Mosques and Events shortcuts — 0.24.17
+
+Explore now contains only Qibla, retaining its original tile width and bottom-left position beneath the prayer list. The unused Mosque placeholder and Events shortcut actions have been removed. Upcoming dates, the compact JAKIM notice and the rest of Home retain their existing layout.
+
+Local fdroid validation built the app and Android test APK, passed 32 JVM tests with 0 failures/errors/skips, and completed lint with 0 errors/fatal issues (159 existing warnings). An initial lint tooling crash was resolved by rerunning against the final unchanged sources. Local evidence: `/workspace/downloads/qibla-only-validation.log`.
+
+[Run 38006313438](https://github.com/RaiquiaSeishun/Khushu_Test/actions/runs/38006313438) passed at application commit `2761253c3b1da24eb81a63e84f57dc78f101053a`: both-distribution build/JVM/lint checks, Android API 30/35 tests, data-preserving update checks, retained-key signing and artifact upload. The existing Home tests now verify that Mosques and Events shortcuts are absent, Qibla remains visible below the prayers and opens the compass, and official source Details still opens. [Download the update ZIP](https://github.com/RaiquiaSeishun/Khushu_Test/actions/runs/38006313438/artifacts/11651692173); test version code 100021, production baseline 91 / 0.24.17. Install over the current retained-key Sukun Test app. CI evidence: `/workspace/downloads/qibla-only-ci-validation.json`.
+
 ## Restore bottom Explore and compact JAKIM notice — 0.24.16
 
 The original Home section order is restored: prayer-time card, source notice, upcoming events and daily prayer list, with Explore inside the bottom of the prayer panel. Explore is rendered unconditionally; the original scroll-dependent reveal rule remains removed. Prayer-panel spacing is tightened without changing the section order or shortcut card design. The official JAKIM notice is a compact, tappable row with inline Details; a separate scrollable dialog retains source/date/retrieval and derived-night-time explanations. Approximate times and active manual offsets retain a visible summary. Guided Prayer remains removed.
