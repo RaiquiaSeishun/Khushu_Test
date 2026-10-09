@@ -14,6 +14,10 @@ I started Sukun after encountering issues with Khushu's Qibla finder and GPS/loc
 
 I'm maintaining these changes independently rather than submitting them upstream. I don't know the original developer's perspective on AI-generated code, and I don't want to burden the maintainer with reviewing changes that I cannot personally review or assess.
 
+## Install a test build
+
+Sign in to GitHub, open a successful [Sukun checks run](https://github.com/RaiquiaSeishun/Khushu_Test/actions/workflows/checks.yml), and download the **sukun-phone-test** artifact. Extract the ZIP and open `sukun-fdroid-debug.apk` on an Android 11 or newer phone. These are debug-signed test builds, not an F-Droid listing or production release. See [the phone checklist](docs/PHONE_TESTING.md) for installation details and checks.
+
 ## Development
 
 Use a full JDK 21, Android SDK platform 36, build-tools 36.0.0, and the checksum-pinned Gradle 9.5.1 wrapper. The `full` flavor uses downloadable fonts; `fdroid` uses bundled fonts.
