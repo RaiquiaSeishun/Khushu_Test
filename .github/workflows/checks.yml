@@ -33,6 +33,7 @@ jobs:
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose "$test_apk"
           mkdir -p "$RUNNER_TEMP/sukun-phone-test"
           cp "$test_apk" "$RUNNER_TEMP/sukun-phone-test/sukun-fdroid-debug.apk"
+          cp LICENSE "$RUNNER_TEMP/sukun-phone-test/LICENSE"
           cp docs/PHONE_TESTING.md "$RUNNER_TEMP/sukun-phone-test/PHONE_TESTING.md"
           printf '%s\n' "$GITHUB_SHA" > "$RUNNER_TEMP/sukun-phone-test/source-commit.txt"
           cd "$RUNNER_TEMP/sukun-phone-test"
@@ -53,6 +54,14 @@ jobs:
           path: app/build/reports/
   android-tests:
     runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - api: 30
+            image: system-images;android-30;default;x86_64
+          - api: 35
+            image: system-images;android-35;google_apis;x86_64
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
       - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
@@ -64,8 +73,12 @@ jobs:
           cmdline-tools-version: '13114758'
           packages: platform-tools
       - name: Install emulator and SDK
-        run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0' 'emulator' 'system-images;android-30;default;x86_64'
+        env:
+          ANDROID_TEST_IMAGE: ${{ matrix.image }}
+        run: sdkmanager 'platforms;android-36' 'build-tools;36.0.0' 'emulator' "$ANDROID_TEST_IMAGE"
       - name: Run Android checks
+        env:
+          ANDROID_TEST_IMAGE: ${{ matrix.image }}
         shell: bash
         run: |
           set -euo pipefail
@@ -73,7 +86,7 @@ jobs:
           export ANDROID_EMULATOR_HOME="$ANDROID_USER_HOME"
           export ANDROID_AVD_HOME="$ANDROID_USER_HOME/avd"
           mkdir -p "$ANDROID_AVD_HOME"
-          printf 'no\n' | avdmanager create avd -n sukun-api30 -k 'system-images;android-30;default;x86_64' --device pixel_2
+          printf 'no\n' | avdmanager create avd -n sukun-api30 -k "$ANDROID_TEST_IMAGE" --device pixel_2
           "$ANDROID_HOME/emulator/emulator" -list-avds | grep -Fx sukun-api30
           sudo chmod a+rw /dev/kvm
           "$ANDROID_HOME/emulator/emulator" -avd sukun-api30 -no-window -no-audio -no-snapshot -no-metrics -gpu swiftshader -accel on -no-boot-anim -skin 480x800 > emulator.log 2>&1 &
@@ -132,7 +145,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
-          name: android-reports
+          name: android-reports-api-${{ matrix.api }}
           path: |
             app/build/reports/androidTests/
             app/build/outputs/androidTest-results/

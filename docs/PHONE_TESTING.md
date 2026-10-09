@@ -1,6 +1,6 @@
 # Sukun phone test
 
-Use a development APK for these checks. It is debug-signed, not a production release. Android 11 or newer is required. Sukun installs separately from Khushu and starts with separate app data.
+Use a development APK for these checks. It is debug-signed, not a production release. Android 11 or newer is required. The current build is labelled **Sukun Test** and installs separately from Khushu and the earlier Sukun APK. It starts with separate app data; no data import is implemented.
 
 Download the `sukun-phone-test` artifact from a successful **Sukun checks** run on the repository's [GitHub Actions page](https://github.com/RaiquiaSeishun/Khushu_Test/actions/workflows/checks.yml). GitHub requires you to sign in to download Actions artifacts. On a phone, open the run in your browser and use desktop-site mode if the artifact section is hidden.
 
@@ -27,9 +27,13 @@ Record phone model, Android version, app version, source commit, permission mode
 | Revocation | Revoke location permission in Android Settings and reopen Sukun. Expect a permission/error status without a crash or erased prior coordinates. |
 | Offline source | Select LOCAL, disable connectivity, and change a supported method. Expect local calculation; an unsupported method must disclose its approximate fallback. |
 | API cache | Select API, fetch a date/location while online, then reopen offline with the same parameters within 24 hours. Expect retained cached timings. A date/location/method change must not silently reuse another request's cache entry. |
+| Official JAKIM | Select the official source and your verified zone, keep offsets at zero, and compare all five entries with e-Solat. Reopen offline after fetching the month and verify the cached source/retrieval status. Change zone, refresh manually, and test a date without cached data: the approximate fallback must be disclosed and official reminders must be skipped. |
+| Icon customization | In Customize, switch Dynamic, Dark, Light, and Green. Return to the launcher and check one working icon, then reopen/restart and verify the selection persists. Turn off launcher themed icons if you want to see the chosen background colors. |
 | API failure | Offline, choose uncached parameters. Expect a disclosed approximate fallback rather than an official accuracy claim. |
 | Notifications | Grant notification permission, enable a prayer reminder, and verify delivery on the phone. Repeat while locked and under battery restrictions; record delays or failures. Revoke permission and verify no crash. |
 | Saved data | Save a canvas/layout, restart, and confirm it remains. The automated 3→5 migration test does not establish every historical upgrade path. |
 
-The Malaysian AlAdhan method does not reproduce the official JAKIM zone timetable in the recorded samples. See [the comparison](PRAYER_REFERENCE_COMPARISON.md). Phone trials cannot establish official accuracy by themselves. Signed update installation requires two builds signed with the same retained production key and remains a separate release test.
+Official JAKIM mode now uses the selected zone’s published entries. The separate Malaysian AlAdhan method does not reproduce the official JAKIM zone timetable in the recorded samples. See [the comparison](PRAYER_REFERENCE_COMPARISON.md). Phone trials cannot establish official accuracy by themselves. Signed update installation requires two builds signed with the same retained production key and remains a separate release test.
 
+
+See [the current feature notes](JAKIM_AND_ICONS.md) for the new test identity, cache behavior, validation scope, and signing limitations.

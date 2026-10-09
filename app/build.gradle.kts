@@ -28,8 +28,8 @@ android {
         applicationId = "io.github.raiquiaseishun.sukun"
         minSdk = 30
         targetSdk = 36
-        versionCode = 85
-        versionName = "0.24.11"
+        versionCode = 86
+        versionName = "0.24.12"
 
 
         buildConfigField("String", "AUDIO_BASE_URL", "\"https://example.com/audio/\"")
@@ -49,6 +49,9 @@ android {
     }
 
     buildTypes {
+        debug {
+            applicationIdSuffix = ".debug"
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true

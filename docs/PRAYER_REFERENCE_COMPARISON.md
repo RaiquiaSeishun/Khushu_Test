@@ -16,5 +16,5 @@ For example, on 2026-10-09 JAKIM returned Fajr 05:51, Dhuhr 13:03, Asr 16:17, Ma
 
 AlAdhan names its method “Jabatan Kemajuan Islam Malaysia (JAKIM)”, but a coordinate calculation is not an official zone timetable. These observations establish a mismatch in these samples; they do not establish its full cause, a correction valid for other dates/zones, or a safe global adjustment. No calculation angles or offsets were changed to conceal the difference.
 
-Official timetable support remains unresolved. A follow-up implementation should support an explicitly selected official zone, validate date/zone response identity, retain source and retrieval status, cache official data for offline use, and clearly disclose any fallback. Validate independent samples across multiple zones and seasons before making official accuracy claims.
+A separate official JAKIM source now supports explicit zone selection, validates response identity and full month coverage, retains source/retrieval status, caches monthly data offline, and discloses missing-data fallbacks. It does not change the AlAdhan calculation or apply a global correction to it. See [the feature notes](JAKIM_AND_ICONS.md) and the unmodified WLY01 January/October and JHR02 October fixtures in `app/src/test/resources/jakim`. Correct zone selection and broader phone/date coverage remain validation requirements.
 

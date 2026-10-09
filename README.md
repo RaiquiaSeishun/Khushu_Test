@@ -6,7 +6,7 @@ An unofficial, independently maintained fork of [Khushu by greykaizen](https://g
 
 This fork is not endorsed by the original developer. Original copyright notices and the [GPLv3 license](LICENSE) are preserved. The original project description and attribution remain in [the upstream README](docs/UPSTREAM_README.md).
 
-Sukun uses an independently drawn ring mark and application ID `io.github.raiquiaseishun.sukun`. It can coexist with Khushu; its data is separate. It cannot update the original app signed by another key. The Kotlin namespace remains unchanged to reduce synchronization conflicts.
+Sukun uses an independently drawn ring mark and production application ID `io.github.raiquiaseishun.sukun`. Current debug builds use `io.github.raiquiaseishun.sukun.debug` and the label **Sukun Test**, with separate app data. It can coexist with Khushu; its data is separate. It cannot update the original app signed by another key. The Kotlin namespace remains unchanged to reduce synchronization conflicts.
 
 ## Why this fork exists
 
@@ -37,6 +37,8 @@ Automatic location refresh runs only while the app is visible. Fixes must be rec
 
 Local prayer mode makes no AlAdhan requests. Unsupported local conventions use a disclosed Muslim World League fallback. Online mode sends coordinates, date, convention, madhab, and time zone to AlAdhan over HTTPS. Successful responses are cached in private app cache for 24 hours by the complete request, including across process restarts; simultaneous identical requests share a fetch. Failed requests can be retried.
 
-Malaysia/JAKIM selection is an AlAdhan calculation convention, **not a verified official Malaysian prayer-zone timetable**. Do not use the local fallback as proof of official accuracy. Parameter changes require independently verified reference data.
+**For official Malaysian times, choose Official JAKIM / e-Solat in Prayer Settings and select your official prayer zone.** Complete monthly timetables are cached for offline use, with daily revision checks and a displayed source/retrieval status. Keep manual offsets at zero to match official entries. GPS does not change your selected zone.
+
+AlAdhan’s Malaysian convention remains a separate calculated source and differs from official zone timetables in our recorded samples. If official data is unavailable, Home and the widget disclose an approximate local fallback; reminders are skipped for dates lacking official data. See [JAKIM and icon customization](docs/JAKIM_AND_ICONS.md) for details and validation scope.
 
 See [development and release notes](docs/FORK_DEVELOPMENT.md) for verified checks, limitations, synchronization, and release prerequisites. Upstream pull requests require user approval.
