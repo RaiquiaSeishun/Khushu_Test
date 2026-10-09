@@ -9,6 +9,9 @@ import com.batoulapps.adhan2.Madhab
 import com.batoulapps.adhan2.PrayerTimes
 import com.batoulapps.adhan2.SunnahTimes
 import com.batoulapps.adhan2.data.DateComponents
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.ensureActive
+import kotlin.coroutines.coroutineContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
@@ -29,39 +32,33 @@ data class AlAdhanResponse(val code: Int, val data: AlAdhanData)
 @Serializable
 data class AlAdhanData(val timings: Map<String, String>)
 
+internal fun nextPrayerDate(date: Date): Date =
+    Calendar.getInstance().apply { time = date; add(Calendar.DAY_OF_MONTH, 1) }.time
+
 class PrayerTimeRepository(
-    private val settingsRepository: SettingsRepository
+    private val cacheDirectory: java.io.File?,
+    private val client: OkHttpClient = OkHttpClient.Builder()
+        .connectTimeout(10, TimeUnit.SECONDS)
+        .readTimeout(15, TimeUnit.SECONDS)
+        .callTimeout(25, TimeUnit.SECONDS)
+        .build(),
+    private val apiBaseUrl: String = "https://api.aladhan.com/v1",
 ) {
-    private val client = OkHttpClient()
+    constructor(settingsRepository: SettingsRepository) : this(settingsRepository.prayerCacheDirectory)
+    var lastApiError: String? = null
+        private set
+
+    companion object {
+        private val apiCache = PrayerApiCache()
+    }
     private val json = Json { ignoreUnknownKeys = true }
 
     fun usesApiSource(settings: UserSettings): Boolean {
-        return settings.prayerSourceType == "API" ||
-            !supportsLocalCalculationMethod(settings.prayerCalculationMethod)
+        return settings.prayerSourceType == "API"
     }
 
-    fun supportsLocalCalculationMethod(methodStr: String): Boolean {
-        return when (methodStr) {
-            "MUSLIM_WORLD_LEAGUE",
-            "EGYPTIAN",
-            "KARACHI",
-            "UMM_AL_QURA",
-            "DUBAI",
-            "MOON_SIGHTING_COMMITTEE",
-            "NORTH_AMERICA",
-            "KUWAIT",
-            "QATAR",
-            "SINGAPORE",
-            "ALGERIA",
-            "TUNISIA",
-            "FRANCE_UOIF",
-            "FRANCE_15",
-            "FRANCE_18" -> true
-            "TEHRAN",
-            "TURKEY" -> false
-            else -> false
-        }
-    }
+    fun supportsLocalCalculationMethod(methodStr: String): Boolean =
+        PrayerCalculationPolicy.supportsLocalMethod(methodStr)
 
     fun getLocalPrayerTimes(
         date: Date,
@@ -74,7 +71,8 @@ class PrayerTimeRepository(
         val calendar = Calendar.getInstance().apply { time = date }
         val dateComponents = DateComponents(calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH) + 1, calendar.get(Calendar.DAY_OF_MONTH))
         
-        val parameters = getCalculationParameters(methodStr).copy(
+        val localMethod = if (supportsLocalCalculationMethod(methodStr)) methodStr else "MUSLIM_WORLD_LEAGUE"
+        val parameters = getCalculationParameters(localMethod).copy(
             madhab = if (madhabStr == "HANAFI") Madhab.HANAFI else Madhab.SHAFI
         )
 
@@ -157,7 +155,7 @@ class PrayerTimeRepository(
             madhabStr = settings.prayerMadhab
         )
         val nextDayPrayerTimes = getLocalPrayerTimes(
-            date = Date(date.time + TimeUnit.DAYS.toMillis(1)),
+            date = nextPrayerDate(date),
             lat = settings.locationLat.toDouble(),
             lng = settings.locationLng.toDouble(),
             methodStr = settings.prayerCalculationMethod,
@@ -231,7 +229,7 @@ class PrayerTimeRepository(
             val timeZoneString = URLEncoder.encode(calendar.timeZone.id, Charsets.UTF_8.name())
 
             val url = buildString {
-                append("https://api.aladhan.com/v1/timings/")
+                append("$apiBaseUrl/timings/")
                 append("$day-$month-$year")
                 append("?latitude=$lat")
                 append("&longitude=$lng")
@@ -246,19 +244,37 @@ class PrayerTimeRepository(
                     append("&shafaq=general")
                 }
             }
-            val request = Request.Builder().url(url).build()
-
-            client.newCall(request).execute().use { response ->
-                if (response.isSuccessful) {
-                    val bodyStr = response.body?.string()
-                    if (bodyStr != null) {
-                        val alAdhanResponse = json.decodeFromString<AlAdhanResponse>(bodyStr)
-                        return@withContext alAdhanResponse.data.timings
+            lastApiError = null
+            val result = apiCache.get(url, cacheDirectory) {
+                coroutineContext.ensureActive()
+                val request = Request.Builder().url(url).build()
+                client.newCall(request).execute().use { response ->
+                    coroutineContext.ensureActive()
+                    if (!response.isSuccessful) {
+                        lastApiError = "Prayer service returned HTTP ${response.code}"
+                        null
+                    } else {
+                        val body = response.body?.string()
+                        val parsed = body?.let { json.decodeFromString<AlAdhanResponse>(it) }
+                        val timings = parsed?.data?.timings
+                        val required = listOf("Fajr", "Dhuhr", "Asr", "Maghrib", "Isha")
+                        val validTime = Regex("(?:[01][0-9]|2[0-3]):[0-5][0-9](?: .*|)$")
+                        if (parsed?.code == 200 && timings != null &&
+                            required.all { validTime.matches(timings[it].orEmpty()) }) timings
+                        else {
+                            lastApiError = "Prayer service returned incomplete or invalid timings"
+                            null
+                        }
                     }
                 }
             }
-            null
+            if (result == null && lastApiError == null) lastApiError = "Prayer service unavailable"
+            result
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
+            coroutineContext.ensureActive()
+            lastApiError = "Prayer service unavailable; using an approximate local fallback"
             null
         }
     }

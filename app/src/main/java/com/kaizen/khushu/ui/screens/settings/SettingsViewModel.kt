@@ -4,8 +4,7 @@ import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import android.location.Geocoder
-import android.location.Location
-import android.location.LocationManager
+import android.os.SystemClock
 import android.os.Build
 import android.widget.Toast
 import androidx.core.content.ContextCompat
@@ -20,6 +19,11 @@ import com.kaizen.khushu.data.repository.SettingsRepository
 import com.kaizen.khushu.data.repository.UserSettings
 import com.kaizen.khushu.util.AppIconManager
 import com.kaizen.khushu.widget.PrayerWidgetProvider
+import com.kaizen.khushu.logic.DeviceLocation
+import com.kaizen.khushu.logic.LocationFixPolicy
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,7 +41,11 @@ class SettingsViewModel(
     private val repository: SettingsRepository,
     private val appContext: Context,
 ) : ViewModel() {
-    private var hasAttemptedGpsRefresh = false
+    private var foregroundJob: Job? = null
+    private var locationJob: Job? = null
+    private var lastAutomaticAttemptMs = 0L
+    val locationError = MutableStateFlow<String?>(null)
+    val locationRefreshing = MutableStateFlow(false)
     val availableQuranScripts = MutableStateFlow(QuranScriptFontRepository.availableScripts(appContext))
     val downloadingQuranScript = MutableStateFlow<String?>(null)
     val quranScriptDownloadProgress = MutableStateFlow(0f)
@@ -82,13 +90,14 @@ class SettingsViewModel(
 
     init {
         viewModelScope.launch {
-            settings.collect { current ->
-                if (current.useGpsLocation && !hasAttemptedGpsRefresh) {
-                    hasAttemptedGpsRefresh = true
+            settings.map { it.useGpsLocation }.distinctUntilChanged().collect { enabled ->
+                if (!enabled) locationJob?.cancel()
+                else if (foregroundJob?.isActive == true && LocationFixPolicy.needsRefresh(
+                        settings.value.lastLocationFixEpochMs, System.currentTimeMillis(),
+                        settings.value.locationRefreshIntervalMinutes,
+                    ) && LocationFixPolicy.canRetryAutomatically(lastAutomaticAttemptMs, SystemClock.elapsedRealtime())) {
+                    lastAutomaticAttemptMs = SystemClock.elapsedRealtime()
                     refreshLocation()
-                }
-                if (!current.useGpsLocation) {
-                    hasAttemptedGpsRefresh = false
                 }
             }
         }
@@ -308,7 +317,7 @@ class SettingsViewModel(
             if (style != current) {
                 Toast.makeText(
                     appContext,
-                    "Updating app icon. Khushu will restart momentarily...",
+                    "Updating app icon. Sukun will restart momentarily...",
                     Toast.LENGTH_SHORT,
                 ).show()
                 delay(1500L)
@@ -495,56 +504,61 @@ class SettingsViewModel(
         }
     }
 
-    fun refreshLocation() {
-        val hasFineLocation =
-            ContextCompat.checkSelfPermission(appContext, Manifest.permission.ACCESS_FINE_LOCATION) ==
-                PackageManager.PERMISSION_GRANTED
-        val hasCoarseLocation =
-            ContextCompat.checkSelfPermission(appContext, Manifest.permission.ACCESS_COARSE_LOCATION) ==
-                PackageManager.PERMISSION_GRANTED
-
-        if (!hasFineLocation && !hasCoarseLocation) {
-            return
-        }
-
-        val locationManager = appContext.getSystemService(LocationManager::class.java) ?: return
-        val enabledProviders = buildList {
-            if (locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
-                add(LocationManager.NETWORK_PROVIDER)
-            }
-            if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-                add(LocationManager.GPS_PROVIDER)
-            }
-        }
-        if (enabledProviders.isEmpty()) {
-            Toast.makeText(appContext, "No location providers enabled. Please check your system settings.", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        try {
-            // Try to get a fresh location first
-            val provider = when {
-                locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER) -> LocationManager.NETWORK_PROVIDER
-                locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) -> LocationManager.GPS_PROVIDER
-                else -> enabledProviders.first()
-            }
-
-            locationManager.getCurrentLocation(provider, null, appContext.mainExecutor) { currentLocation ->
-                if (currentLocation != null) {
-                    setLocation(currentLocation.latitude.toFloat(), currentLocation.longitude.toFloat())
-                } else {
-                    // Fallback to last known if current fails
-                    enabledProviders
-                        .asSequence()
-                        .mapNotNull { p -> locationManager.getLastKnownLocation(p) }
-                        .maxByOrNull(Location::getTime)
-                        ?.let { lastKnown ->
-                            setLocation(lastKnown.latitude.toFloat(), lastKnown.longitude.toFloat())
-                        }
+    fun onForeground() {
+        if (foregroundJob?.isActive == true) return
+        foregroundJob = viewModelScope.launch {
+            while (isActive) {
+                val current = repository.settingsFlow.first()
+                if (current.useGpsLocation && LocationFixPolicy.needsRefresh(
+                        current.lastLocationFixEpochMs, System.currentTimeMillis(),
+                        current.locationRefreshIntervalMinutes,
+                    ) && LocationFixPolicy.canRetryAutomatically(lastAutomaticAttemptMs, SystemClock.elapsedRealtime())) {
+                    lastAutomaticAttemptMs = SystemClock.elapsedRealtime()
+                    refreshLocation()
                 }
+                delay(60_000L)
             }
-        } catch (e: SecurityException) {
-            // Permission checks happen above
+        }
+    }
+
+    fun onBackground() {
+        foregroundJob?.cancel()
+        locationJob?.cancel()
+    }
+
+    fun setLocationRefreshInterval(minutes: Int) {
+        viewModelScope.launch { repository.updateLocationRefreshInterval(minutes) }
+    }
+
+    fun refreshLocation() {
+        if (locationJob?.isActive == true) return
+        val fine = ContextCompat.checkSelfPermission(appContext, Manifest.permission.ACCESS_FINE_LOCATION) ==
+            PackageManager.PERMISSION_GRANTED
+        val coarse = ContextCompat.checkSelfPermission(appContext, Manifest.permission.ACCESS_COARSE_LOCATION) ==
+            PackageManager.PERMISSION_GRANTED
+        if (!fine && !coarse) {
+            locationError.value = "Location permission is required. Use GPS Access to grant it."
+            return
+        }
+        locationJob = viewModelScope.launch {
+            locationRefreshing.value = true
+            locationError.value = null
+            try {
+                val fix = DeviceLocation.findFix(appContext, fine)
+                if (fix == null) {
+                    locationError.value = "No recent, accurate location found. Check device location settings and retry. Previous coordinates are retained."
+                } else if (repository.settingsFlow.first().useGpsLocation) {
+                    if (fix.time < repository.settingsFlow.first().lastLocationFixEpochMs) {
+                        locationError.value = "No newer location fix found. Previous coordinates are retained."
+                        return@launch
+                    }
+                    repository.updateLocationFix(
+                        fix.latitude.toFloat(), fix.longitude.toFloat(), fix.time, fix.accuracy,
+                    )
+                }
+            } finally {
+                locationRefreshing.value = false
+            }
         }
     }
 

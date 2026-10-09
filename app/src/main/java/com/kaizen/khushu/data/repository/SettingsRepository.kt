@@ -17,6 +17,7 @@ import java.io.IOException
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
 class SettingsRepository(private val context: Context) {
+    internal val prayerCacheDirectory get() = java.io.File(context.cacheDir, "prayer-times")
 
     private object PreferencesKeys {
         val HAPTICS_ENABLED = booleanPreferencesKey("haptics_enabled")
@@ -85,6 +86,9 @@ class SettingsRepository(private val context: Context) {
         val PRAYER_MADHAB = stringPreferencesKey("prayer_madhab")
         val LOCATION_LAT = floatPreferencesKey("location_lat")
         val LOCATION_LNG = floatPreferencesKey("location_lng")
+        val LAST_LOCATION_FIX = longPreferencesKey("last_location_fix_epoch_ms")
+        val LOCATION_ACCURACY = floatPreferencesKey("location_accuracy_meters")
+        val LOCATION_REFRESH_INTERVAL = intPreferencesKey("location_refresh_interval_minutes")
         val USE_GPS_LOCATION = booleanPreferencesKey("use_gps_location")
         val PRAYER_SOURCE_TYPE = stringPreferencesKey("prayer_source_type")
         val PRAYER_OFFSET_FAJR = intPreferencesKey("prayer_offset_fajr")
@@ -208,6 +212,9 @@ class SettingsRepository(private val context: Context) {
                 locationLat = preferences[PreferencesKeys.LOCATION_LAT] ?: 21.4225f,
                 locationLng = preferences[PreferencesKeys.LOCATION_LNG] ?: 39.8262f,
                 useGpsLocation = preferences[PreferencesKeys.USE_GPS_LOCATION] ?: false,
+                lastLocationFixEpochMs = preferences[PreferencesKeys.LAST_LOCATION_FIX] ?: 0L,
+                locationAccuracyMeters = preferences[PreferencesKeys.LOCATION_ACCURACY] ?: 0f,
+                locationRefreshIntervalMinutes = preferences[PreferencesKeys.LOCATION_REFRESH_INTERVAL] ?: 60,
                 prayerSourceType = preferences[PreferencesKeys.PRAYER_SOURCE_TYPE] ?: "LOCAL",
                 fajrOffsetMinutes = preferences[PreferencesKeys.PRAYER_OFFSET_FAJR] ?: 0,
                 dhuhrOffsetMinutes = preferences[PreferencesKeys.PRAYER_OFFSET_DHUHR] ?: 0,
@@ -285,7 +292,22 @@ class SettingsRepository(private val context: Context) {
         context.dataStore.edit {
             it[PreferencesKeys.LOCATION_LAT] = lat
             it[PreferencesKeys.LOCATION_LNG] = lng
+            it.remove(PreferencesKeys.LAST_LOCATION_FIX)
+            it.remove(PreferencesKeys.LOCATION_ACCURACY)
         }
+    }
+
+    suspend fun updateLocationFix(lat: Float, lng: Float, epochMs: Long, accuracy: Float) {
+        context.dataStore.edit {
+            it[PreferencesKeys.LOCATION_LAT] = lat
+            it[PreferencesKeys.LOCATION_LNG] = lng
+            it[PreferencesKeys.LAST_LOCATION_FIX] = epochMs
+            it[PreferencesKeys.LOCATION_ACCURACY] = accuracy
+        }
+    }
+
+    suspend fun updateLocationRefreshInterval(minutes: Int) {
+        context.dataStore.edit { it[PreferencesKeys.LOCATION_REFRESH_INTERVAL] = minutes.coerceIn(15, 360) }
     }
 
     suspend fun updateUseGpsLocation(enabled: Boolean) {
@@ -654,6 +676,9 @@ data class UserSettings(
     val locationLat: Float = 21.4225f,
     val locationLng: Float = 39.8262f,
     val useGpsLocation: Boolean = false,
+    val lastLocationFixEpochMs: Long = 0L,
+    val locationAccuracyMeters: Float = 0f,
+    val locationRefreshIntervalMinutes: Int = 60,
     val prayerSourceType: String = "LOCAL",
     val fajrOffsetMinutes: Int = 0,
     val dhuhrOffsetMinutes: Int = 0,

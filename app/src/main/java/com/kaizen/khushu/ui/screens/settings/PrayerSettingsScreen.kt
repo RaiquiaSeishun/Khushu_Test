@@ -31,12 +31,17 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
+import com.kaizen.khushu.data.repository.PrayerCalculationPolicy
+import com.kaizen.khushu.logic.LocationFixPolicy
+import androidx.compose.runtime.LaunchedEffect
+import kotlinx.coroutines.delay
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.text.KeyboardOptions
@@ -141,11 +146,24 @@ fun PrayerSettingsScreen(
     onBack: () -> Unit
 ) {
     val settings by viewModel.settings.collectAsState()
+    val locationError by viewModel.locationError.collectAsState()
+    val locationRefreshing by viewModel.locationRefreshing.collectAsState()
+    var now by remember { mutableStateOf(System.currentTimeMillis()) }
+    LaunchedEffect(Unit) {
+        while (true) { delay(60_000L); now = System.currentTimeMillis() }
+    }
+    val locationStatus = if (settings.lastLocationFixEpochMs > 0L) {
+        val age = ((now - settings.lastLocationFixEpochMs).coerceAtLeast(0L) / 60_000L)
+        val stale = LocationFixPolicy.needsRefresh(settings.lastLocationFixEpochMs, now, settings.locationRefreshIntervalMinutes)
+        "Location fix: $age min ago, ±${settings.locationAccuracyMeters.toInt()} m" +
+            if (stale) " (stale)" else ""
+    } else "No verified location fix; saved coordinates may be stale"
     val context = LocalContext.current
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val notificationsAllowed = NotificationManagerCompat.from(context).areNotificationsEnabled()
+    val locale = LocalConfiguration.current.locales[0]
     val lastRefreshed = if (settings.lastPrayerRefreshEpochMs > 0L) {
-        SimpleDateFormat("d MMM, h:mm a", Locale.getDefault()).format(Date(settings.lastPrayerRefreshEpochMs))
+        SimpleDateFormat("d MMM, h:mm a", locale).format(Date(settings.lastPrayerRefreshEpochMs))
     } else {
         "Not refreshed yet"
     }
@@ -224,7 +242,7 @@ fun PrayerSettingsScreen(
 
             SettingsGroup(
                 title = "Calculation",
-//                description = "How Khushu computes the daily prayer times."
+//                description = "How Sukun computes the daily prayer times."
             ) {
                 Box(modifier = Modifier.padding(horizontal = 20.dp)) {
                     SettingsDropdown(
@@ -260,23 +278,40 @@ fun PrayerSettingsScreen(
                 }
             }
 
+            Text(
+                text = if (settings.prayerSourceType == "API")
+                    "Online mode sends coordinates, date, method, madhab and time zone to AlAdhan over HTTPS. Results are cached for 24 hours. If unavailable, approximate local times are used. Malaysian results are calculations, not verified official zone timetables."
+                else if (!PrayerCalculationPolicy.supportsLocalMethod(settings.prayerCalculationMethod))
+                    "This convention requires online calculation. Local mode stays offline and uses the Muslim World League convention instead; these are approximate fallback times. Select Online to use the selected convention."
+                else "Local mode calculates prayer times on this device without sending coordinates to AlAdhan.",
+                modifier = Modifier.padding(20.dp),
+                style = MaterialTheme.typography.bodySmall,
+            )
+
             SettingsGroup(
                 title = "Location",
 //                description = "Use GPS or your saved coordinates for local prayer times."
             ) {
                 SettingsToggleItem(
                     title = "Use Device GPS",
-                    subtitle = "Automatically refresh your location for accurate timings.",
+                    subtitle = "Refresh stale location while the app is visible; no background GPS polling.",
                     checked = settings.useGpsLocation,
                     onCheckedChange = { enabled ->
                         viewModel.toggleUseGpsLocation(enabled)
-                        if (enabled) {
-                            viewModel.refreshLocation()
-                        }
                     }
                 )
 
                 if (settings.useGpsLocation) {
+                    Box(modifier = Modifier.padding(horizontal = 20.dp)) {
+                        SettingsDropdown(
+                            title = "Location refresh interval",
+                            subtitle = "Checks when the app is visible. Manual refresh is always available.",
+                            options = listOf("15", "60", "180", "360"),
+                            selectedOption = settings.locationRefreshIntervalMinutes.toString(),
+                            optionLabel = { "$it minutes" },
+                            onOptionSelected = { viewModel.setLocationRefreshInterval(it.toInt()) },
+                        )
+                    }
                     Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -300,14 +335,18 @@ fun PrayerSettingsScreen(
     
                             OutlinedButton(
                                 onClick = viewModel::refreshLocation,
+                                enabled = !locationRefreshing,
                                 modifier = Modifier.weight(1f)
                             ) {
                                 Icon(Icons.Default.Refresh, contentDescription = null)
                                 Spacer(Modifier.width(8.dp))
-                                Text("Refresh", fontFamily = BeVietnamPro, style = MaterialTheme.typography.titleSmall)
+                                Text(if (locationRefreshing) "Finding…" else "Retry", fontFamily = BeVietnamPro, style = MaterialTheme.typography.titleSmall)
                             }
                         }
     
+                        locationError?.let { error ->
+                            Text(error, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                        }
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
                         
                         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -317,7 +356,7 @@ fun PrayerSettingsScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
-                                text = "Last refreshed: $lastRefreshed",
+                                text = locationStatus,
                                 style = MaterialTheme.typography.bodySmall.copy(fontFamily = BeVietnamPro),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -508,7 +547,7 @@ fun PrayerSettingsScreen(
                         madhab = prayerSettingLabel(settings.prayerMadhab, madhabLabels),
                         latitude = settings.locationLat,
                         longitude = settings.locationLng,
-                        lastRefreshed = lastRefreshed,
+                        lastRefreshed = "Prayer data: $lastRefreshed; $locationStatus",
                         gpsEnabled = settings.useGpsLocation,
                         notificationsAllowed = notificationsAllowed
                     )
@@ -655,7 +694,7 @@ private fun ExtraTimingCard(
     ) {
         SettingsToggleItem(
             title = "Show on surfaces",
-            subtitle = "Keep ${preference.label} visible in Khushu.",
+            subtitle = "Keep ${preference.label} visible in Sukun.",
             checked = preference.selected,
             onCheckedChange = onSelectedToggle
         )

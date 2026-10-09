@@ -524,7 +524,7 @@ fun HomeScreen(
             }
     val nextPrayer = findNextPrayer(homeVisibleTimings, currentTimeMillis)
 
-    val sunArcT by derivedStateOf {
+    val sunArcT = run {
         val fajrMs = displayPrayers.firstOrNull { it.name == "Fajr" }?.rawTime?.toEpochMilliseconds() ?: 0L
         val ishaMs = displayPrayers.firstOrNull { it.name == "Isha" }?.rawTime?.toEpochMilliseconds() ?: 1L
         val total = (ishaMs - fajrMs).toFloat()
@@ -679,6 +679,17 @@ fun HomeScreen(
                             locationLabel = locationLabel,
                             source = uiState.calculationSource,
                             modifier = Modifier.padding(horizontal = 14.dp)
+                        )
+                    }
+                }
+
+                uiState.prayerDataWarning?.let { warning ->
+                    item {
+                        Text(
+                            text = warning,
+                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
                         )
                     }
                 }

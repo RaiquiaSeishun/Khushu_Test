@@ -1,5 +1,7 @@
 package com.kaizen.khushu.notifications
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
@@ -24,6 +26,9 @@ object PrayerNotificationPublisher {
     ) {
         val notificationManager = NotificationManagerCompat.from(context)
         if (!notificationManager.areNotificationsEnabled()) return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
+                PackageManager.PERMISSION_GRANTED) return
 
         val launchIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -89,6 +94,10 @@ object PrayerNotificationPublisher {
             builder.setSilent(true)
         }
 
-        notificationManager.notify("$prayerName-${type.name}".hashCode(), builder.build())
+        try {
+            notificationManager.notify("$prayerName-${type.name}".hashCode(), builder.build())
+        } catch (_: SecurityException) {
+            // Permission may be revoked after the check; do not crash the alarm receiver.
+        }
     }
 }

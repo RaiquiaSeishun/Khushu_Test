@@ -4,6 +4,7 @@ package com.kaizen.khushu.logic
 import com.batoulapps.adhan2.Coordinates
 import com.batoulapps.adhan2.Prayer
 import com.batoulapps.adhan2.PrayerTimes
+import com.kaizen.khushu.data.repository.nextPrayerDate
 import com.kaizen.khushu.data.repository.PrayerTimeRepository
 import com.kaizen.khushu.data.repository.SettingsRepository
 import com.kaizen.khushu.data.repository.toDate
@@ -65,7 +66,7 @@ class PrayerManager(
                     val nextTime = if (nextTodayName != null) {
                         effectiveTimes[nextTodayName]
                     } else {
-                        val tomorrow = Date(date.time + 86400000L)
+                        val tomorrow = nextPrayerDate(date)
                         val tomorrowTimes = prayerRepository.getEffectivePrayerDateTimes(tomorrow, settings)
                         tomorrowTimes["Fajr"]?.let { Instant.fromEpochMilliseconds(it.time) }
                     } ?: timings.fajr

@@ -343,6 +343,10 @@ class HomeViewModel(
             locationLng = settings.locationLng,
             locationLabel = settings.locationLabel,
             calculationSource = if (isApiSource) CalculationSource.API else CalculationSource.LOCAL,
+            prayerDataWarning = if (isApiSource) prayerTimeRepository.lastApiError
+                else if (!prayerTimeRepository.supportsLocalCalculationMethod(settings.prayerCalculationMethod))
+                    "Selected convention needs internet. Using approximate Muslim World League times offline."
+                else null,
             showExtraPrayerTimingsOnHome = settings.showExtraPrayerTimingsOnHome,
             showUpcomingEventsOnHome = settings.showUpcomingEventsOnHome
         )

@@ -437,7 +437,7 @@ fun TasbihWidgetRenderer(
 
 
         is TasbihWidget.DhikrNameWidget -> {
-            BoxWithConstraints(
+            Box(
                 modifier = baseModifier
                     .defaultMinSize(minWidth = 180.dp)
             ) {

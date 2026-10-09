@@ -117,11 +117,13 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
+        settingsViewModel.onForeground()
         val sessionToken = SessionToken(this, ComponentName(this, PlaybackService::class.java))
         controllerFuture = MediaController.Builder(this, sessionToken).buildAsync()
     }
 
     override fun onStop() {
+        settingsViewModel.onBackground()
         super.onStop()
         controllerFuture?.let {
             MediaController.releaseFuture(it)
@@ -139,7 +141,9 @@ class MainActivity : ComponentActivity() {
         }
 
         settingsRepository = SettingsRepository(applicationContext)
-        settingsViewModel = SettingsViewModel(settingsRepository, applicationContext)
+        settingsViewModel = ViewModelProvider(
+            this, SettingsViewModel.factory(settingsRepository, applicationContext)
+        )[SettingsViewModel::class.java]
         prayerTimeRepository = PrayerTimeRepository(settingsRepository)
         val islamicEventsRepository = IslamicEventsRepository(applicationContext)
         val prayerNotificationScheduler = PrayerNotificationScheduler(applicationContext)
