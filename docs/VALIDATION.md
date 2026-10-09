@@ -1,5 +1,13 @@
 # Validation evidence
 
+## Prayer source status card — 0.24.14
+
+Home now presents source information in a compact card with optional Details. Valid official and cached timetables use a neutral surface; approximate fallback times remain explicit in the visible summary. Unconfirmed automatic zone selection shows the GPS status in Details without also instructing the user to choose a manual zone. Manual time adjustments remain visible in the summary. No prayer calculation, GPS lookup, signing identity or application ID behavior changed.
+
+Local fdroid debug validation built the APK, passed 32 JVM tests with 0 failures/errors/skips, and completed lint with 0 errors/fatal issues (existing warnings remain). The additional regression covers official and cached data, manual adjustments, pending GPS selection and unavailable official data. Local evidence: `/workspace/downloads/prayer-source-card-validation.log`. Physical light/dark-theme, large-text and expansion checks are listed in [PHONE_TESTING.md](PHONE_TESTING.md).
+
+[Run 37999588724](https://github.com/RaiquiaSeishun/Khushu_Test/actions/runs/37999588724) passed at application commit `0c830192d34724956405ab19fbc7b6485e2de960`: both-distribution build/JVM/lint checks, Android API 30/35 tests and data-preserving update checks, retained-key signing/verification and artifact upload. [Download the update ZIP](https://github.com/RaiquiaSeishun/Khushu_Test/actions/runs/37999588724/artifacts/11647729891); test version code 100016, production baseline 88 / 0.24.14. Install over the current retained-key Sukun Test app. CI evidence: `/workspace/downloads/prayer-source-card-ci-validation.json`.
+
 ## Optional automatic GPS prayer-zone selection — 0.24.13
 
 [Run 37997628279](https://github.com/RaiquiaSeishun/Khushu_Test/actions/runs/37997628279) completed successfully on 2026-10-09 at application commit `0ed3d65b273aae3a1dc2b4e50f9d520d34d4ee5a`. Both-distribution build/JVM/lint checks, connected Android checks on API 30/35 and data-preserving APK update checks passed. Retained-key signing/verification and phone-artifact upload passed. The download has test version code 100015; the production baseline is 87 / 0.24.13.
