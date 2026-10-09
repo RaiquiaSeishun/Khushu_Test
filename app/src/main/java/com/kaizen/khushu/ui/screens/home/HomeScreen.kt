@@ -648,7 +648,7 @@ fun HomeScreen(
 
                     if (displayPrayers.isEmpty()) {
                         PrayerSunMergedCardShimmer(
-                            modifier = Modifier.padding(horizontal = 14.dp).testTag("home-prayer-card")
+                            modifier = Modifier.padding(horizontal = 14.dp).testTag("home-prayer-loading")
                         )
                     } else {
                         PrayerSunMergedCard(

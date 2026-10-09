@@ -130,6 +130,15 @@ jobs:
           [[ "$(adb shell getprop sys.boot_completed | tr -d '\r')" == 1 ]]
           [[ "$(adb shell service check package | tr -d '\r')" == 'Service package: found' ]]
           [[ "$(adb shell service check activity | tr -d '\r')" == 'Service activity: found' ]]
+          # The low-resolution skin retains Pixel 2's 420 dpi unless overridden.
+          # Use a representative 384 x 640 dp phone viewport (480 x 800 px at 200 dpi).
+          adb shell wm size
+          adb shell wm density
+          adb shell wm size 480x800
+          adb shell wm density 200
+          adb shell wm size
+          adb shell wm density
+          adb shell wm density | grep -F 'Override density: 200'
           adb shell settings put global window_animation_scale 0
           adb shell settings put global transition_animation_scale 0
           adb shell settings put global animator_duration_scale 0
@@ -185,6 +194,8 @@ jobs:
           annotation('Android test reports', [str(p) for p in reports] or ['No test-result XML files: application tests may not have started.'])
           for command in [
               ['adb', 'devices', '-l'],
+              ['adb', 'shell', 'wm', 'size'],
+              ['adb', 'shell', 'wm', 'density'],
               ['adb', 'shell', 'getprop', 'sys.boot_completed'],
               ['adb', 'shell', 'service', 'check', 'package'],
               ['adb', 'shell', 'service', 'check', 'activity'],
