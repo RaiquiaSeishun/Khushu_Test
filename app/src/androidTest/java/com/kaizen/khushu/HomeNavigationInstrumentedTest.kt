@@ -83,7 +83,9 @@ class HomeNavigationInstrumentedTest {
     private fun assertInitialShortcutsVisible() {
         compose.onNodeWithTag("home-prayer-card").assertIsDisplayed()
         compose.onNodeWithTag("home-quick-actions").assertIsDisplayed()
-        for (label in listOf("Qibla", "Mosques", "Events")) compose.onNodeWithText(label).assertIsDisplayed()
+        compose.onNodeWithText("Qibla").assertIsDisplayed()
+        compose.onNodeWithText("Mosques").assertDoesNotExist()
+        compose.onNodeWithText("Events").assertDoesNotExist()
         val shortcuts = compose.onNodeWithTag("home-quick-actions").fetchSemanticsNode().boundsInRoot
         val navigation = compose.onNodeWithTag("main-navigation").fetchSemanticsNode().boundsInRoot
         assertTrue("Shortcuts extend behind bottom navigation: $shortcuts / $navigation", shortcuts.bottom <= navigation.top)
@@ -105,13 +107,13 @@ class HomeNavigationInstrumentedTest {
         compose.onNodeWithText("Pray Screen").assertDoesNotExist()
     }
 
-    @Test fun sourceNoticeDoesNotHideShortcutsAndEventsJumpStillWorks() = withHome("JAKIM") {
+    @Test fun sourceNoticeDoesNotHideQiblaAndCompassStillOpens() = withHome("JAKIM") {
         compose.waitUntil(30_000) {
             compose.onAllNodesWithText("Approximate prayer times").fetchSemanticsNodes().isNotEmpty()
         }
         assertInitialShortcutsVisible()
-        compose.onNodeWithText("Events").performClick()
-        compose.onNodeWithTag("home-events").assertIsDisplayed()
+        compose.onNodeWithText("Qibla").performClick()
+        compose.onNodeWithText("Qibla Direction").assertIsDisplayed()
     }
     @Test fun officialNoticeStaysCompactAndDetailsOpenWithoutChangingHomeLayout() = withHome("JAKIM", official = true) {
         compose.waitUntil(30_000) {

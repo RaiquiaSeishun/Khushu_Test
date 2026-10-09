@@ -57,7 +57,6 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.DisposableEffect
@@ -103,7 +102,6 @@ import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlin.math.min
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 private fun findNextPrayer(prayers: List<PrayerInfo>, now: Long): PrayerInfo? {
@@ -437,7 +435,6 @@ fun HomeScreen(
     val haptics = LocalHapticFeedback.current
     val density = LocalDensity.current
     val listState = rememberLazyListState()
-    val scope = rememberCoroutineScope()
 
     var currentInstant by remember { mutableStateOf(Instant.fromEpochMilliseconds(System.currentTimeMillis())) }
     LaunchedEffect(Unit) {
@@ -697,14 +694,7 @@ fun HomeScreen(
                                     if (uiState.showExtraPrayerTimingsOnHome) displayExtraTimings
                                     else emptyList(),
                             doneStates = doneStates,
-                            onQuickActionTap = { action ->
-                                if (action == HomeQuickAction.EVENTS && uiState.showUpcomingEventsOnHome) {
-                                    val eventsIndex = if (uiState.prayerDataNotice == null) 2 else 3
-                                    scope.launch { listState.animateScrollToItem(eventsIndex) }
-                                } else {
-                                    selectedQuickAction = action
-                                }
-                            },
+                            onQuickActionTap = { selectedQuickAction = it },
                             onToggleDoneAttempt = { name ->
                                 val prayers = displayPrayers.filterNot { it.isExtra }
                                 val tappedIndex = prayers.indexOfFirst { it.name == name }
@@ -790,50 +780,13 @@ fun HomeScreen(
         )
     }
 
-    selectedQuickAction?.let { action ->
-        if (action == HomeQuickAction.QIBLA) {
-            QiblaCompassDialog(
-                bearingDegrees = qiblaBearing,
-                locationLabel = locationLabel,
-                latitude = uiState.locationLat,
-                longitude = uiState.locationLng,
-                onDismiss = { selectedQuickAction = null }
-            )
-            return@let
-        }
-        val title =
-                when (action) {
-                    HomeQuickAction.QIBLA -> "Qibla Direction"
-                    HomeQuickAction.MOSQUES -> "Mosque Directory"
-                    HomeQuickAction.EVENTS -> "Events"
-                }
-        val message =
-                when (action) {
-                    HomeQuickAction.QIBLA ->
-                            "Face ${qiblaBearing.toInt()}° ${compassPointLabel(qiblaBearing)} toward Makkah from ${locationLabel.ifBlank { "your current location" }}."
-                    HomeQuickAction.MOSQUES ->
-                            "Mosque discovery is planned next. This action is intentionally marked as coming soon for now."
-                    HomeQuickAction.EVENTS ->
-                            "Upcoming events are hidden on Home right now. Re-enable them in Prayer settings to jump back here directly."
-                }
-        AlertDialog(
-                onDismissRequest = { selectedQuickAction = null },
-                title = { Text(title) },
-                text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(message)
-                        if (action == HomeQuickAction.QIBLA) {
-                            Text(
-                                text = "Coordinates: ${"%.4f".format(Locale.US, uiState.locationLat)}, ${"%.4f".format(Locale.US, uiState.locationLng)}",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-                },
-                confirmButton = {
-                    TextButton(onClick = { selectedQuickAction = null }) { Text("Close") }
-                }
+    selectedQuickAction?.let {
+        QiblaCompassDialog(
+            bearingDegrees = qiblaBearing,
+            locationLabel = locationLabel,
+            latitude = uiState.locationLat,
+            longitude = uiState.locationLng,
+            onDismiss = { selectedQuickAction = null }
         )
     }
 

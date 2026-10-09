@@ -11,8 +11,6 @@ enum class CalculationSource { LOCAL, API, JAKIM }
 
 enum class HomeQuickAction {
     QIBLA,
-    MOSQUES,
-    EVENTS,
 }
 
 data class PrayerInfo(

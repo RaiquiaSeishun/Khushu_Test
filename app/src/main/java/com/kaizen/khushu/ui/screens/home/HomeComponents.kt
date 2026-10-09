@@ -4039,30 +4039,13 @@ fun QuickDirectoryRow(
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                 )
                 Spacer(modifier = Modifier.height(10.dp))
-                Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
+                BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
                         ExploreMiniCard(
                                 icon = LucideIcons.Compass,
                                 label = "Qibla",
                                 supportLabel = null,
-                                modifier = Modifier.weight(1f),
+                                modifier = Modifier.width((maxWidth - 20.dp) / 3),
                                 onClick = { onActionClick(HomeQuickAction.QIBLA) }
-                        )
-                        ExploreMiniCard(
-                                icon = LucideIcons.MapPin,
-                                label = "Mosques",
-                                supportLabel = "Soon",
-                                modifier = Modifier.weight(1f),
-                                onClick = { onActionClick(HomeQuickAction.MOSQUES) }
-                        )
-                        ExploreMiniCard(
-                                icon = LucideIcons.Calendar,
-                                label = "Events",
-                                supportLabel = null,
-                                modifier = Modifier.weight(1f),
-                                onClick = { onActionClick(HomeQuickAction.EVENTS) }
                         )
                 }
         }
