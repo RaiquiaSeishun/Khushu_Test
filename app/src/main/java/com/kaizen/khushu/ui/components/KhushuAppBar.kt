@@ -138,9 +138,9 @@ fun KhushuAppBar(
                             ) { isLogoTitle ->
                                 if (isLogoTitle) {
                                     Icon(
-                                        painter = painterResource(id = R.drawable.ic_khushu_logo),
+                                        painter = painterResource(id = R.drawable.ic_sukun_logo),
                                         contentDescription = "Sukun",
-                                        tint = MaterialTheme.colorScheme.onSurface,
+                                        tint = Color.Unspecified,
                                         modifier = Modifier.size(64.dp)
                                     )
                                 } else {

@@ -1,4 +1,3 @@
 <?xml version="1.0" encoding="utf-8"?>
-<inset xmlns:android="http://schemas.android.com/apk/res/android"
-    android:drawable="@drawable/ic_khushu_logo_black"
-    android:inset="8%" />
+<bitmap xmlns:android="http://schemas.android.com/apk/res/android" android:src="@drawable/ic_sukun_logo"
+    android:gravity="fill" android:filter="true" android:tint="#FFFFFFFF" android:tintMode="src_in" />

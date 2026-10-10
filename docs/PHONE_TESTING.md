@@ -68,3 +68,7 @@ After updating, open Al-Fatihah and Al-Baqarah with your saved Mustafa Khattab A
 ### Home pull-to-refresh completion
 
 With JAKIM selected, pull down at the top of Home. The indicator should retract when the request finishes, including when official times are unavailable or the GPS prayer zone remains unconfirmed. Repeat while offline and check that cached official times remain usable. Multiple pulls during one refresh must not queue extra refreshes; another pull should work after completion.
+
+### Sukun arch-and-crescent branding
+
+Check the new logo on the launcher, splash screen, app header, customization previews and Home refresh indicator. In Customize, try Dynamic, Dark, Light and Islamic Green; verify the icon remains complete on circular and rounded-square launchers. On Android 13 or newer, enable themed icons and check the arch and crescent remain recognizable. Update over the existing app and confirm the saved icon style, settings and downloaded translations remain available.

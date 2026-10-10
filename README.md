@@ -1,12 +1,14 @@
 # Sukun
 
+<img src="docs/images/sukun-logo.png" width="100" alt="Sukun logo">
+
 An unofficial, independently maintained fork of [Khushu by greykaizen](https://github.com/greykaizen/khushu), focused on prayer-time reliability, location accuracy, privacy, and data safety.
 
 **All changes made for Sukun—including code and this README—are written entirely by AI and reviewed by AI.** Automated tests, builds, and lint provide additional checks. This disclosure applies to this fork's changes; the inherited Khushu code retains its original authorship and attribution.
 
 This fork is not endorsed by the original developer. Original copyright notices and the [GPLv3 license](LICENSE) are preserved. The original project description and attribution remain in [the upstream README](docs/UPSTREAM_README.md).
 
-Sukun uses an independently drawn ring mark and production application ID `io.github.raiquiaseishun.sukun`. Current debug builds use `io.github.raiquiaseishun.sukun.debug` and the label **Sukun Test**, with separate app data. It can coexist with Khushu; its data is separate. It cannot update the original app signed by another key. The Kotlin namespace remains unchanged to reduce synchronization conflicts.
+Sukun uses the owner-supplied teal arch-and-crescent logo and production application ID `io.github.raiquiaseishun.sukun`. Current debug builds use `io.github.raiquiaseishun.sukun.debug` and the label **Sukun Test**, with separate app data. It can coexist with Khushu; its data is separate. It cannot update the original app signed by another key. The Kotlin namespace remains unchanged to reduce synchronization conflicts.
 
 Phone-test downloads require a [retained test signing key](docs/TEST_SIGNING.md). Once configured, newer APKs update the same test app and preserve data. The old temporary-key APKs cannot transition through a normal update.
 
@@ -19,6 +21,10 @@ I'm maintaining these changes independently rather than submitting them upstream
 ## Install a test build
 
 Sign in to GitHub, open a successful [Sukun checks run](https://github.com/RaiquiaSeishun/Khushu_Test/actions/workflows/checks.yml), and download the **sukun-phone-test** artifact. Extract the ZIP and open `sukun-fdroid-debug.apk` on an Android 11 or newer phone. These are debug-signed test builds, not an F-Droid listing or production release. See [the phone checklist](docs/PHONE_TESTING.md) for installation details and checks.
+
+## App icon
+
+The supplied logo is used in launcher icons, the splash screen, settings previews, the app header, refresh indicator and notification glyph. Dynamic uses a light wallpaper accent; Dark and Light keep the teal artwork. Islamic Green and Android themed icons use the same silhouette in a single colour. Icon choices retain their existing saved settings and launcher aliases.
 
 ## Home
 

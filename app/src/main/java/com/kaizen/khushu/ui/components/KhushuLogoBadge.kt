@@ -45,15 +45,15 @@ fun KhushuLogoBadge(
         "GREEN" -> Color(0xFF1B7A3E)
         else    -> {
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-                Color(ContextCompat.getColor(context, android.R.color.system_accent1_500))
+                Color(ContextCompat.getColor(context, android.R.color.system_accent1_50))
             } else {
-                Color(0xFF27847D)
+                Color(0xFFEEF7F5)
             }
         }
     }
     val iconTint = when (logoStyle) {
-        "LIGHT" -> Color(0xFF000000)
-        else    -> Color(0xFFFFFFFF)
+        "GREEN" -> Color.White
+        else    -> Color.Unspecified
     }
 
     val interactionSource = remember { MutableInteractionSource() }
@@ -110,7 +110,7 @@ fun KhushuLogoBadge(
     ) {
         Box(contentAlignment = Alignment.Center) {
             Icon(
-                painter = painterResource(id = R.drawable.ic_khushu_logo),
+                painter = painterResource(id = R.drawable.ic_sukun_logo),
                 contentDescription = null,
                 modifier = Modifier
                     .size(iconSize)
