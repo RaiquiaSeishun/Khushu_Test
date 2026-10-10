@@ -306,7 +306,7 @@ fun QuranReaderScreen(
     // Convert ayahs to blocks for BlockRenderer
     val blocks = remember(ayahs, translations, tafsirText, surah) {
         ayahs.map { (num, text) ->
-            val plainText = text.replace(Regex("<[^>]*>"), "")
+            val plainText = com.kaizen.khushu.logic.QuranMarkup.plainText(text)
 
             AyahBlock(
                 surah = surahNumber,
@@ -691,19 +691,19 @@ fun QuranReaderScreen(
                     selectedSource = try { ContentSource.valueOf(settings.selectedTranslationSource) } catch (e: Exception) { ContentSource.FAWAZ },
                     isDownloading = translationViewModel.isDownloading.value,
                     progress = translationViewModel.downloadProgress.floatValue,
+                    downloadError = translationViewModel.downloadError.value,
                     onSelectSource = { source ->
                         settingsViewModel.setSelectedTranslationSource(source.name)
                     },
                     onSelect = { meta ->
-                        if (TranslationRepository.isDownloaded(context, meta.id)) {
+                        val select = {
+                            translationViewModel.downloadError.value = null
+                            settingsViewModel.setSelectedTranslationSource(meta.source.name)
                             settingsViewModel.setSelectedTranslationLang(meta.id)
                             showTranslationPicker = false
-                        } else {
-                            translationViewModel.downloadTranslation(context, meta) {
-                                settingsViewModel.setSelectedTranslationLang(meta.id)
-                                showTranslationPicker = false
-                            }
                         }
+                        if (com.kaizen.khushu.data.repository.TranslationRepository.isDownloaded(context, meta.id)) select()
+                        else translationViewModel.downloadTranslation(context, meta, select)
                     },
                     onDismiss = { showTranslationPicker = false }
                 )

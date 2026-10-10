@@ -16,6 +16,7 @@ import com.kaizen.khushu.data.repository.CatalogRepository
 import com.kaizen.khushu.data.repository.TafsirRepository
 import com.kaizen.khushu.data.repository.QuranReflectRepository
 import com.kaizen.khushu.data.repository.QuranScriptFontRepository
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -27,6 +28,7 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
     val scriptMap = mutableStateOf<Map<String, String>>(emptyMap())
     val verseMeta = mutableStateOf<Map<String, VerseMeta>>(emptyMap())
     val isLoading = mutableStateOf(false)
+    private var chapterJob: Job? = null
 
     val tafsirText = mutableStateOf<Map<Int, String>>(emptyMap())
     val isTafsirDownloading = mutableStateOf(false)
@@ -121,8 +123,9 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun loadSurah(surahNumber: Int, translationId: String) {
+        chapterJob?.cancel()
         isLoading.value = true
-        viewModelScope.launch(Dispatchers.IO) {
+        chapterJob = viewModelScope.launch(Dispatchers.IO) {
             val ayahs = QuranRepository.getAyahs(getApplication(), surahNumber)
             val translation = QuranRepository.getTranslation(getApplication(), surahNumber, translationId)
             withContext(Dispatchers.Main) {
@@ -134,7 +137,8 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun loadTranslation(context: android.content.Context, surahNumber: Int, translationId: String) {
-        viewModelScope.launch(Dispatchers.IO) {
+        chapterJob?.cancel()
+        chapterJob = viewModelScope.launch(Dispatchers.IO) {
             val translation = QuranRepository.getTranslation(context, surahNumber, translationId)
             withContext(Dispatchers.Main) {
                 currentTranslation.value = translation

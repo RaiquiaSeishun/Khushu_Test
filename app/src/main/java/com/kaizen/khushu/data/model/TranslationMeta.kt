@@ -116,7 +116,7 @@ data class TranslationMeta(
 
         fun bundledUrdu() = TranslationMeta(
             id = "ur_54", langCode = "ur", langName = "Urdu",
-            translatorName = "Maulana Fateh Muhammad Jalandhari", isRtl = true,
+            translatorName = "Maulana Muhammad Junagarhi", isRtl = true,
             downloadUrl = "", sizeKb = 420, source = ContentSource.FAWAZ
         )
 

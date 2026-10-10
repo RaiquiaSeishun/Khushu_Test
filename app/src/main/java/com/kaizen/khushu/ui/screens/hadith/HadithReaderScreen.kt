@@ -223,17 +223,25 @@ fun HadithReaderScreen(
             }
 
             if (showTranslationPicker) {
+                val translationViewModel: com.kaizen.khushu.ui.screens.learn.LearnReadingViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
                 TranslationPickerSheet(
                     selectedId = settings.selectedTranslationLang,
                     selectedSource = try { com.kaizen.khushu.data.model.ContentSource.valueOf(settings.selectedTranslationSource) } catch (e: Exception) { com.kaizen.khushu.data.model.ContentSource.FAWAZ },
-                    isDownloading = false, // TODO: Implement if needed
-                    progress = 0f,
+                    isDownloading = translationViewModel.isDownloading.value,
+                    progress = translationViewModel.downloadProgress.floatValue,
+                    downloadError = translationViewModel.downloadError.value,
                     onSelectSource = { source ->
                         settingsViewModel.setSelectedTranslationSource(source.name)
                     },
                     onSelect = { meta ->
-                        settingsViewModel.setSelectedTranslationLang(meta.id)
-                        showTranslationPicker = false
+                        val select = {
+                            translationViewModel.downloadError.value = null
+                            settingsViewModel.setSelectedTranslationSource(meta.source.name)
+                            settingsViewModel.setSelectedTranslationLang(meta.id)
+                            showTranslationPicker = false
+                        }
+                        if (com.kaizen.khushu.data.repository.TranslationRepository.isDownloaded(context, meta.id)) select()
+                        else translationViewModel.downloadTranslation(context, meta, select)
                     },
                     onDismiss = { showTranslationPicker = false }
                 )

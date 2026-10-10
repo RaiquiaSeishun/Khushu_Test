@@ -7,6 +7,8 @@ import com.kaizen.khushu.data.model.ContentBlock
 import com.kaizen.khushu.data.repository.LearnRepository
 import com.kaizen.khushu.data.repository.QuranScriptFontRepository
 import com.kaizen.khushu.data.repository.TranslationRepository
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,6 +25,8 @@ class LearnReadingViewModel(application: Application) : AndroidViewModel(applica
     val scriptMap = androidx.compose.runtime.mutableStateOf<Map<String, String>>(emptyMap())
     val downloadProgress = androidx.compose.runtime.mutableFloatStateOf(0f)
     val isDownloading = androidx.compose.runtime.mutableStateOf(false)
+    val downloadError = androidx.compose.runtime.mutableStateOf<String?>(null)
+    private var translationJob: Job? = null
 
     init {
         loadTajweed()
@@ -61,7 +65,8 @@ class LearnReadingViewModel(application: Application) : AndroidViewModel(applica
     }
 
     fun loadTranslation(context: android.content.Context, translationId: String) {
-        viewModelScope.launch(Dispatchers.IO) {
+        translationJob?.cancel()
+        translationJob = viewModelScope.launch(Dispatchers.IO) {
             val map = TranslationRepository.load(context, translationId)
             withContext(Dispatchers.Main) {
                 translationMap.value = map
@@ -72,16 +77,23 @@ class LearnReadingViewModel(application: Application) : AndroidViewModel(applica
     fun downloadTranslation(context: android.content.Context, meta: com.kaizen.khushu.data.model.TranslationMeta, onDone: () -> Unit) {
         if (isDownloading.value) return
         isDownloading.value = true
-        viewModelScope.launch(Dispatchers.IO) {
-            TranslationRepository.download(context, meta.id, meta.downloadUrl) { progress ->
-                downloadProgress.floatValue = progress
-            }
-            val map = TranslationRepository.load(context, meta.id)
-            withContext(Dispatchers.Main) {
-                translationMap.value = map
+        downloadError.value = null
+        downloadProgress.floatValue = 0f
+        viewModelScope.launch {
+            try {
+                TranslationRepository.download(context, meta.id, meta.downloadUrl) { progress ->
+                    downloadProgress.floatValue = progress
+                }
+                translationMap.value = TranslationRepository.load(context, meta.id)
+                isDownloading.value = false
+                onDone()
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                downloadError.value = "Couldn't download this translation. Check your connection or try another source."
+            } finally {
                 isDownloading.value = false
                 downloadProgress.floatValue = 0f
-                onDone()
             }
         }
     }

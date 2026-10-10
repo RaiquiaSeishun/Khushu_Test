@@ -19,6 +19,7 @@ import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
+import com.kaizen.khushu.logic.QuranMarkup
 import com.kaizen.khushu.ui.theme.ScheherazadeNew
 
 @Composable
@@ -56,48 +57,11 @@ fun TajweedText(
     )
 }
 
-/**
- * Parses Quran.com HTML-like tajweed markup into an [AnnotatedString].
- *
- * Example: <tajweed class=ham_wasl>ٱ</tajweed>للَّهِ
- */
-private fun parseTajweed(markup: String, defaultColor: Color): AnnotatedString = buildAnnotatedString {
-    // Regex for both <tajweed class=...>CONTENT</tajweed> and <span class=end>...</span>
-    // Note: this assumes tags are not nested, which is true for quran.com data.
-    val tagRegex = Regex("<(tajweed|span) class=([^> ]+)>([^<]*)</\\1>")
-    
-    var lastIndex = 0
-    tagRegex.findAll(markup).forEach { match ->
-        // 1. Append plain text before the tag
-        if (match.range.first > lastIndex) {
-            append(markup.substring(lastIndex, match.range.first))
-        }
-
-        val tagType = match.groupValues[1]
-        val className = match.groupValues[2]
-        val content = match.groupValues[3]
-
-        if (tagType == "tajweed") {
-            val ruleColor = tajweedColor(className, defaultColor)
-            if (ruleColor != defaultColor) {
-                withStyle(SpanStyle(color = ruleColor)) {
-                    append(content)
-                }
-            } else {
-                append(content)
-            }
-        } else if (tagType == "span" && className == "end") {
-            // Skip verse number span entirely — handled by AyahEndMarker in BlockRenderer
-        } else {
-            append(content)
-        }
-
-        lastIndex = match.range.last + 1
-    }
-
-    // 2. Append remaining plain text
-    if (lastIndex < markup.length) {
-        append(markup.substring(lastIndex))
+/** Nested rules inherit their outer colour unless an inner rule supplies a different colour. */
+internal fun parseTajweed(markup: String, defaultColor: Color): AnnotatedString = buildAnnotatedString {
+    for (segment in QuranMarkup.segments(markup)) {
+        val color = segment.rules.fold(defaultColor) { inherited, rule -> tajweedColor(rule, inherited) }
+        withStyle(SpanStyle(color = color)) { append(segment.text) }
     }
 }
 

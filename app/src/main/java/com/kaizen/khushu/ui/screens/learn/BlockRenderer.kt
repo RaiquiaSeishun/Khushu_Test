@@ -319,9 +319,8 @@ private fun AyahBlockView(
         // ── Translation ───────────────────────────────────────────────────────
         val translationText = when {
             !settings.showTranslation -> null
-            translationMap.isNotEmpty() -> com.kaizen.khushu.data.repository.TranslationRepository
-                .getTranslation(translationMap, block.surah, block.ayah) ?: block.translationEn
-            else -> block.translationEn
+            else -> com.kaizen.khushu.data.repository.TranslationRepository
+                .getTranslation(translationMap, block.surah, block.ayah)
         }
         val isTranslationRtl = com.kaizen.khushu.data.model.TranslationMeta.AVAILABLE_TRANSLATIONS
             .find { it.id == settings.selectedTranslationLang }?.isRtl ?: false

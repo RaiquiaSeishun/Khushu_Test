@@ -693,6 +693,7 @@ fun TranslationPickerSheet(
     selectedSource: ContentSource,
     isDownloading: Boolean,
     progress: Float,
+    downloadError: String? = null,
     onSelectSource: (ContentSource) -> Unit,
     onSelect: (TranslationMeta) -> Unit,
     onDismiss: () -> Unit,
@@ -704,12 +705,21 @@ fun TranslationPickerSheet(
         ContentSource.entries.filter { it.supportsTranslations }
     }
 
-    val catalog = remember(selectedSource) {
-        val list = CatalogRepository.translations(context, selectedSource).toMutableList()
-        // Always show bundled at top
-        val bundled = listOf(TranslationMeta.bundledEnglish(), TranslationMeta.bundledUrdu())
-        bundled.forEach { b -> if (list.none { it.id == b.id }) list.add(0, b) }
-        list.groupBy { it.langName.ifBlank { "Other" } }.toSortedMap()
+    var showDownloaded by remember { mutableStateOf(true) }
+    val savedIds by produceState<Set<String>?>(initialValue = null, context, isDownloading) {
+        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            TranslationRepository.downloadedIds(context)
+        }
+    }
+    val allTranslations = remember(context) {
+        (listOf(TranslationMeta.bundledEnglish(), TranslationMeta.bundledUrdu()) +
+            translationSources.flatMap { CatalogRepository.translations(context, it) }).distinctBy { it.id }
+    }
+    val catalog = remember(selectedSource, showDownloaded, savedIds) {
+        val editions = if (showDownloaded) allTranslations.filter { it.id in savedIds.orEmpty() }
+        else (listOf(TranslationMeta.bundledEnglish(), TranslationMeta.bundledUrdu()) +
+            CatalogRepository.translations(context, selectedSource)).distinctBy { it.id }
+        editions.groupBy { it.langName.ifBlank { "Other" } }.toSortedMap()
     }
 
     ModalBottomSheet(
@@ -725,14 +735,25 @@ fun TranslationPickerSheet(
                     modifier = Modifier.padding(bottom = 12.dp)
                 )
 
-                SettingLabel("Source")
-                Spacer(Modifier.height(8.dp))
-                SourcePickerRow(
-                    sources = translationSources,
-                    selected = selectedSource,
-                    onSelect = onSelectSource,
-                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(selected = showDownloaded, enabled = !isDownloading,
+                        onClick = { showDownloaded = true }, label = { Text("Downloaded") })
+                    FilterChip(selected = !showDownloaded, enabled = !isDownloading,
+                        onClick = { showDownloaded = false }, label = { Text("Browse") })
+                }
+                if (!showDownloaded) {
+                    SettingLabel("Source")
+                    Spacer(Modifier.height(8.dp))
+                    SourcePickerRow(sources = translationSources, selected = selectedSource, onSelect = onSelectSource)
+                }
                 Spacer(Modifier.height(16.dp))
+                if (showDownloaded && savedIds == null) {
+                    Text("Checking saved translations…", style = MaterialTheme.typography.bodySmall)
+                }
+                if (downloadError != null) {
+                    Text(downloadError, color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(vertical = 8.dp))
+                }
 
                 if (isDownloading) {
                     Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
@@ -753,7 +774,7 @@ fun TranslationPickerSheet(
                         }
                         items(translations) { meta ->
                             val isBundled = meta.id in TranslationMeta.BUNDLED
-                            val isDownloaded = isBundled || TranslationRepository.isDownloaded(context, meta.id)
+                            val isDownloaded = isBundled || meta.id in savedIds.orEmpty()
                             val isSelected = selectedId == meta.id
 
                             Surface(

@@ -293,10 +293,20 @@ fun LearnReadingScreen(
                     selectedSource = try { com.kaizen.khushu.data.model.ContentSource.valueOf(settings.selectedTranslationSource) } catch (e: Exception) { com.kaizen.khushu.data.model.ContentSource.FAWAZ },
                     isDownloading = learnReadingViewModel.isDownloading.value,
                     progress = learnReadingViewModel.downloadProgress.floatValue,
+                    downloadError = learnReadingViewModel.downloadError.value,
                     onSelectSource = { source ->
                         settingsViewModel.setSelectedTranslationSource(source.name)
                     },
-                    onSelect = { meta -> settingsViewModel.setSelectedTranslationLang(meta.id); showTranslationPicker = false },
+                    onSelect = { meta ->
+                        val select = {
+                            learnReadingViewModel.downloadError.value = null
+                            settingsViewModel.setSelectedTranslationSource(meta.source.name)
+                            settingsViewModel.setSelectedTranslationLang(meta.id)
+                            showTranslationPicker = false
+                        }
+                        if (com.kaizen.khushu.data.repository.TranslationRepository.isDownloaded(context, meta.id)) select()
+                        else learnReadingViewModel.downloadTranslation(context, meta, select)
+                    },
                     onDismiss = { showTranslationPicker = false }
                 )
             }
