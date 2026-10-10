@@ -60,3 +60,7 @@ Use a known location and keep the phone flat, away from magnets and metal. Kuala
 ### Quran formatting and downloaded translations
 
 Open 2:190 with Tajweed on: nested rules should be coloured without visible HTML tags or missing Arabic letters. Turn Tajweed off and check there is one verse-end number, including on 1:1 and 2:255. Test reading mode and verse-by-verse mode. Download two translations and reopen the picker: Downloaded should list both regardless of their source, alongside the bundled editions. Switching between them should work offline. Browse should expose all supported sources. Test a Quran Foundation and QuranEnc download when connected; an unavailable edition should show a retryable failure, keep the previous selection, and never appear as a complete downloaded edition. Interrupt a download and retry it; the previous valid copy must remain readable. Verify your existing Mustafa Khattab Allah edition remains selected after updating, and compare several displayed verses with its published reference.
+
+### Quran reader opening and verse-by-verse translations
+
+After updating, open Al-Fatihah and Al-Baqarah with your saved Mustafa Khattab Allah edition. In Verse by Verse, check the translation appears beneath the Arabic. Switch to Reading and back, switch saved editions, and turn Show Translation off and on. Scroll, return to the chapter list and reopen; change chapters quickly and confirm the heading, Arabic and translation belong to the same chapter. Note any remaining delay on the first opening versus subsequent openings.

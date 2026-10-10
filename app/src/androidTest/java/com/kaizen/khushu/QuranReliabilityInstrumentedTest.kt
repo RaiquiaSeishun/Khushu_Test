@@ -1,5 +1,14 @@
 package com.kaizen.khushu
 
+import android.app.Application
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.lifecycle.ViewModelStore
+import com.kaizen.khushu.data.repository.SettingsRepository
+import com.kaizen.khushu.ui.screens.quran.QuranReaderScreen
+import com.kaizen.khushu.ui.screens.quran.QuranViewModel
+import com.kaizen.khushu.ui.screens.quran.QuranAudioViewModel
+import com.kaizen.khushu.ui.screens.settings.SettingsViewModel
+import kotlinx.coroutines.flow.first
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -108,4 +117,94 @@ class QuranReliabilityInstrumentedTest {
             compose.onNodeWithText("Browse").performClick()
             compose.onNodeWithText("Source").assertIsDisplayed()
         }
+
+    @Test fun actualReaderShowsDownloadedTranslationAfterModeAndEditionSwitches() =
+        withFiles(listOf("eng_mustafakhattaba", "test_reader_second")) {
+            TranslationRepository.install(context, "eng_mustafakhattaba", fixture("saved Mustafa fixture"))
+            TranslationRepository.install(context, "test_reader_second", fixture("second edition fixture"))
+            val repository = SettingsRepository(context)
+            val original = runBlocking { repository.settingsFlow.first() }
+            val store = ViewModelStore()
+            val chapter = mutableIntStateOf(1)
+            lateinit var quran: QuranViewModel
+            lateinit var settings: SettingsViewModel
+            lateinit var audio: QuranAudioViewModel
+            try {
+                runBlocking {
+                    repository.updateSelectedTranslationLang("eng_mustafakhattaba")
+                    repository.updateShowTranslation(true)
+                    repository.setShowTafsir(false)
+                    repository.updateSelectedScript("uthmani")
+                    repository.updateUseGpsLocation(false)
+                }
+                compose.runOnIdle {
+                    val app = context.applicationContext as Application
+                    quran = QuranViewModel(app).also { store.put("quran", it) }
+                    settings = SettingsViewModel(repository, context).also { store.put("settings", it) }
+                    audio = QuranAudioViewModel(app).also { store.put("audio", it) }
+                }
+                compose.setContent {
+                    MaterialTheme {
+                        QuranReaderScreen(surahNumber = chapter.intValue, onBack = {}, onNextSurah = { chapter.intValue = it },
+                            viewModel = quran, settingsViewModel = settings, media3Controller = null, quranAudioViewModel = audio)
+                    }
+                }
+                fun awaitTranslation(text: String) {
+                    compose.waitUntil(30_000) { compose.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty() }
+                    compose.onNodeWithText(text).assertIsDisplayed()
+                }
+                awaitTranslation("saved Mustafa fixture 1:1")
+                compose.onNodeWithText("Reading", useUnmergedTree = true).performClick()
+                compose.onNodeWithText("saved Mustafa fixture 1:1").assertDoesNotExist()
+                compose.onNodeWithText("Verse by Verse", useUnmergedTree = true).performClick()
+                awaitTranslation("saved Mustafa fixture 1:1")
+                runBlocking { repository.updateSelectedTranslationLang("test_reader_second") }
+                awaitTranslation("second edition fixture 1:1")
+                compose.onNodeWithText("saved Mustafa fixture 1:1").assertDoesNotExist()
+                // Opening the longest chapter must retain its translation after preparation.
+                compose.runOnIdle { chapter.intValue = 2 }
+                compose.waitUntil(30_000) { quran.loadedSurah.value == 2 && !quran.isLoading.value }
+                compose.runOnIdle { assertEquals(286, quran.currentBlocks.value.size) }
+                compose.onNodeWithTag("quran-verses").performScrollToNode(hasText("second edition fixture 2:1"))
+                compose.onNodeWithText("second edition fixture 2:1").assertIsDisplayed()
+                compose.runOnIdle { chapter.intValue = 114 }
+                compose.waitUntil(30_000) { quran.loadedSurah.value == 114 && !quran.isLoading.value }
+                compose.onNodeWithTag("quran-verses").performScrollToNode(hasText("second edition fixture 114:1"))
+                compose.onNodeWithText("second edition fixture 114:1").assertIsDisplayed()
+                compose.onNodeWithText("second edition fixture 2:1").assertDoesNotExist()
+                runBlocking { repository.updateShowTranslation(false) }
+                compose.waitUntil(10_000) { compose.onAllNodesWithText("second edition fixture 114:1").fetchSemanticsNodes().isEmpty() }
+                runBlocking { repository.updateShowTranslation(true) }
+                awaitTranslation("second edition fixture 114:1")
+            } finally {
+                compose.runOnIdle { store.clear() }
+                runBlocking {
+                    repository.updateSelectedTranslationLang(original.selectedTranslationLang)
+                    repository.updateShowTranslation(original.showTranslation)
+                    repository.setShowTafsir(original.showTafsir)
+                    repository.updateSelectedScript(original.selectedScript)
+                    repository.updateUseGpsLocation(original.useGpsLocation)
+                }
+            }
+        }
+
+    @Test fun rapidlySupersededChapterLoadsCannotPublishTheWrongChapter() {
+        val store = ViewModelStore()
+        lateinit var quran: QuranViewModel
+        try {
+            compose.runOnIdle {
+                quran = QuranViewModel(context.applicationContext as Application).also { store.put("quran", it) }
+                quran.loadSurah(2, "en_20")
+                quran.loadSurah(1, "ur_54")
+                quran.loadSurah(114, "en_20")
+            }
+            compose.waitUntil(30_000) { quran.loadedSurah.value == 114 && !quran.isLoading.value }
+            compose.runOnIdle {
+                assertEquals(6, quran.currentBlocks.value.size)
+                assertTrue(quran.currentBlocks.value.all { it.surah == 114 })
+                assertEquals(QuranRepository.getTranslation(context, 114, "en_20"), quran.currentTranslation.value)
+                assertTrue(quran.currentBlocks.value.all { !it.translationEn.isNullOrBlank() })
+            }
+        } finally { compose.runOnIdle { store.clear() } }
+    }
 }

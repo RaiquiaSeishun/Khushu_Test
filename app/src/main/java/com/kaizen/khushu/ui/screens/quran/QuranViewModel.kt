@@ -4,6 +4,8 @@ import android.app.Application
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.kaizen.khushu.data.model.AyahBlock
+import com.kaizen.khushu.logic.QuranMarkup
 import com.kaizen.khushu.data.model.SurahMeta
 import com.kaizen.khushu.data.repository.QuranRepository
 import com.kaizen.khushu.data.repository.LearnRepository
@@ -23,12 +25,14 @@ import kotlinx.coroutines.withContext
 
 class QuranViewModel(application: Application) : AndroidViewModel(application) {
     val chapters = mutableStateOf<List<SurahMeta>>(emptyList())
-    val currentAyahs = mutableStateOf<List<Pair<Int, String>>>(emptyList())
+    val currentBlocks = mutableStateOf<List<AyahBlock>>(emptyList())
+    val loadedSurah = mutableStateOf<Int?>(null)
     val currentTranslation = mutableStateOf<Map<Int, String>>(emptyMap())
     val scriptMap = mutableStateOf<Map<String, String>>(emptyMap())
     val verseMeta = mutableStateOf<Map<String, VerseMeta>>(emptyMap())
     val isLoading = mutableStateOf(false)
     private var chapterJob: Job? = null
+    private var scriptJob: Job? = null
 
     val tafsirText = mutableStateOf<Map<Int, String>>(emptyMap())
     val isTafsirDownloading = mutableStateOf(false)
@@ -126,28 +130,34 @@ class QuranViewModel(application: Application) : AndroidViewModel(application) {
         chapterJob?.cancel()
         isLoading.value = true
         chapterJob = viewModelScope.launch(Dispatchers.IO) {
-            val ayahs = QuranRepository.getAyahs(getApplication(), surahNumber)
-            val translation = QuranRepository.getTranslation(getApplication(), surahNumber, translationId)
+            val context = getApplication<Application>()
+            val surah = QuranRepository.getChapters(context).find { it.id == surahNumber }
+            val ayahs = QuranRepository.getAyahs(context, surahNumber)
+            val translation = QuranRepository.getTranslation(context, surahNumber, translationId)
+            // Prepare the whole chapter off the UI thread, not during composition.
+            val blocks = ayahs.map { (num, text) ->
+                AyahBlock(
+                    surah = surahNumber,
+                    ayah = num,
+                    display = "Surah ${surah?.nameSimple ?: surahNumber}, Ayah $num",
+                    textUthmani = QuranMarkup.plainText(text),
+                    tajweedMarkup = text.takeIf { "<tajweed" in it },
+                    translationEn = translation[num],
+                    verified = true,
+                )
+            }
             withContext(Dispatchers.Main) {
-                currentAyahs.value = ayahs
+                currentBlocks.value = blocks
                 currentTranslation.value = translation
+                loadedSurah.value = surahNumber
                 isLoading.value = false
             }
         }
     }
 
-    fun loadTranslation(context: android.content.Context, surahNumber: Int, translationId: String) {
-        chapterJob?.cancel()
-        chapterJob = viewModelScope.launch(Dispatchers.IO) {
-            val translation = QuranRepository.getTranslation(context, surahNumber, translationId)
-            withContext(Dispatchers.Main) {
-                currentTranslation.value = translation
-            }
-        }
-    }
-
     fun loadScript(context: android.content.Context, script: String) {
-        viewModelScope.launch(Dispatchers.IO) {
+        scriptJob?.cancel()
+        scriptJob = viewModelScope.launch(Dispatchers.IO) {
             if (script == "uthmani" || script == QuranScriptFontRepository.UTHMANIC_HAFS) {
                 withContext(Dispatchers.Main) {
                     scriptMap.value = emptyMap()

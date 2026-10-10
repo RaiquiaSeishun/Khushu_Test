@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -161,7 +162,8 @@ fun QuranReaderScreen(
     quranAudioViewModel: QuranAudioViewModel = viewModel(),
     modifier: Modifier = Modifier
 ) {
-    val ayahs by viewModel.currentAyahs
+    val blocks by viewModel.currentBlocks
+    val loadedSurah by viewModel.loadedSurah
     val translations by viewModel.currentTranslation
     val scriptMap by viewModel.scriptMap
     val isLoading by viewModel.isLoading
@@ -280,10 +282,11 @@ fun QuranReaderScreen(
         viewModel.loadScript(context, settings.selectedScript)
     }
 
-    LaunchedEffect(surahNumber, initialAyahIndex, ayahs.size) {
+    LaunchedEffect(surahNumber, initialAyahIndex, loadedSurah, blocks.size) {
         val targetAyah = initialAyahIndex ?: return@LaunchedEffect
-        if (ayahs.isEmpty()) return@LaunchedEffect
-        listState.scrollToItem(targetAyah.coerceIn(0, ayahs.lastIndex))
+        if (loadedSurah != surahNumber || blocks.isEmpty()) return@LaunchedEffect
+        // Item zero is the chapter header.
+        listState.scrollToItem(targetAyah.coerceIn(0, blocks.lastIndex) + 1)
     }
 
     val surah = chapters.find { it.id == surahNumber }
@@ -303,22 +306,14 @@ fun QuranReaderScreen(
         }
     }
 
-    // Convert ayahs to blocks for BlockRenderer
-    val blocks = remember(ayahs, translations, tafsirText, surah) {
-        ayahs.map { (num, text) ->
-            val plainText = com.kaizen.khushu.logic.QuranMarkup.plainText(text)
+    // BlockRenderer shares the canonical chapter:verse format with Learn.
+    // Build once per chapter/edition, rather than once for every visible row.
+    val translationMap = remember(surahNumber, translations) {
+        translations.mapKeys { (verse, _) -> "$surahNumber:$verse" }
+    }
 
-            AyahBlock(
-                surah = surahNumber,
-                ayah = num,
-                display = "Surah ${surah?.nameSimple ?: surahNumber}, Ayah $num",
-                textUthmani = plainText,
-                tajweedMarkup = if (text.contains("<tajweed")) text else null,
-                translationEn = translations[num],
-                tafsirText = tafsirText[num],
-                verified = true
-            )
-        }
+    LaunchedEffect(surahNumber, loadedSurah) {
+        if (loadedSurah == surahNumber && initialAyahIndex == null) listState.scrollToItem(0)
     }
 
     MaterialTheme(colorScheme = scheme) {
@@ -402,7 +397,7 @@ fun QuranReaderScreen(
                     color = if (settings.readingTheme == "DARK") Color.Black else if (settings.readingTheme == "PAPER") Color(0xFFFBF4E9) else MaterialTheme.colorScheme.surface,
                     shape = androidx.compose.foundation.shape.RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp)
                 ) {
-                    if (isLoading) {
+                    if (isLoading || loadedSurah != surahNumber) {
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                             CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                         }
@@ -412,7 +407,7 @@ fun QuranReaderScreen(
                         LazyColumn(
                             state = listState,
                             contentPadding = PaddingValues(bottom = 32.dp),
-                            modifier = Modifier.fillMaxSize()
+                            modifier = Modifier.fillMaxSize().testTag("quran-verses")
                         ) {
                             item {
                                 Column(
@@ -491,7 +486,10 @@ fun QuranReaderScreen(
                                 }
                             }
 
-                            itemsIndexed(blocks) { index, block ->
+                            itemsIndexed(blocks, key = { _, block -> "${block.surah}:${block.ayah}" }) { index, preparedBlock ->
+                                val block = remember(preparedBlock, tafsirText) {
+                                    preparedBlock.copy(tafsirText = tafsirText[preparedBlock.ayah])
+                                }
                                 val ayahNum = block.ayah
                                 val meta = viewModel.verseMeta.value["$surahNumber:$ayahNum"]
                                 val prevMeta = if (ayahNum > 1) viewModel.verseMeta.value["$surahNumber:${ayahNum - 1}"] else null
@@ -507,9 +505,6 @@ fun QuranReaderScreen(
 
                                     val topicId = "quran_surah_$surahNumber"
                                     val isBookmarked = settings.bookmarkedAyahs.contains("$topicId:$index")
-                                    val translationMap = remember(translations) {
-                                        translations.mapKeys { it.key.toString() }
-                                    }
                                     
                                     BlockRenderer(
                                         block = block,

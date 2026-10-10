@@ -4,6 +4,7 @@ import kotlinx.serialization.json.*
 
 /** Decode supported provider formats without accepting duplicates, missing verses or blank text. */
 object TranslationData {
+    private val whitespace = Regex("\\s+")
     private val json = Json { ignoreUnknownKeys = true }
     fun parse(content: String): Map<String, String> {
         val root = json.parseToJsonElement(content).jsonObject
@@ -40,6 +41,6 @@ object TranslationData {
             key to clean(item["text"]!!.jsonPrimitive.content)
         }
     }
-    private fun clean(text: String) = QuranMarkup.plainText(text).replace(Regex("\\s+"), " ").trim()
+    private fun clean(text: String) = QuranMarkup.plainText(text).replace(whitespace, " ").trim()
     fun encode(map: Map<String, String>): String = JsonObject(map.mapValues { JsonPrimitive(it.value) }).toString()
 }

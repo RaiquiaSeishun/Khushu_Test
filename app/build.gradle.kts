@@ -35,8 +35,8 @@ android {
         applicationId = "io.github.raiquiaseishun.sukun"
         minSdk = 30
         targetSdk = 36
-        versionCode = 93
-        versionName = "0.24.19"
+        versionCode = 94
+        versionName = "0.24.20"
 
 
         buildConfigField("String", "AUDIO_BASE_URL", "\"https://example.com/audio/\"")

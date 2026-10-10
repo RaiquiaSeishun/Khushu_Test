@@ -96,7 +96,7 @@ object QuranRepository {
 
     fun getAyahs(context: Context, surahNumber: Int): List<Pair<Int, String>> {
         val tajweed = loadTajweed(context)
-        val uthmani = loadUthmani(context)
+        val uthmani by lazy { loadUthmani(context) }
         
         val chapters = getChapters(context)
         val surah = chapters.find { it.id == surahNumber } ?: return emptyList()
