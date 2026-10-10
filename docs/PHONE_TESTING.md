@@ -64,3 +64,7 @@ Open 2:190 with Tajweed on: nested rules should be coloured without visible HTML
 ### Quran reader opening and verse-by-verse translations
 
 After updating, open Al-Fatihah and Al-Baqarah with your saved Mustafa Khattab Allah edition. In Verse by Verse, check the translation appears beneath the Arabic. Switch to Reading and back, switch saved editions, and turn Show Translation off and on. Scroll, return to the chapter list and reopen; change chapters quickly and confirm the heading, Arabic and translation belong to the same chapter. Note any remaining delay on the first opening versus subsequent openings.
+
+### Home pull-to-refresh completion
+
+With JAKIM selected, pull down at the top of Home. The indicator should retract when the request finishes, including when official times are unavailable or the GPS prayer zone remains unconfirmed. Repeat while offline and check that cached official times remain usable. Multiple pulls during one refresh must not queue extra refreshes; another pull should work after completion.

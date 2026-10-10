@@ -381,6 +381,7 @@ fun HomeScreen(
 ) {
     val darkTheme = isSystemInDarkTheme()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
     val haptics = LocalHapticFeedback.current
     val density = LocalDensity.current
     val listState = rememberLazyListState()
@@ -489,22 +490,22 @@ fun HomeScreen(
             animateFloatAsState(
                     targetValue =
                             when {
-                                uiState.isRefreshing -> refreshHoldPx
+                                isRefreshing -> refreshHoldPx
                                 else -> pullOffsetPx
                             },
                     animationSpec = spring(stiffness = 420f, dampingRatio = 0.88f),
                     label = "home_pull_offset"
             )
 
-    LaunchedEffect(uiState.isRefreshing) {
-        if (!uiState.isRefreshing) {
+    LaunchedEffect(isRefreshing) {
+        if (!isRefreshing) {
             pullOffsetPx = 0f
             thresholdReached = false
         }
     }
 
     val pullRefreshConnection =
-            remember(listState, uiState.isRefreshing) {
+            remember(listState, isRefreshing) {
                 object : NestedScrollConnection {
                     override fun onPreScroll(
                             available: androidx.compose.ui.geometry.Offset,
@@ -530,7 +531,7 @@ fun HomeScreen(
                             available: androidx.compose.ui.geometry.Offset,
                             source: NestedScrollSource
                     ): androidx.compose.ui.geometry.Offset {
-                        if (source != NestedScrollSource.UserInput || uiState.isRefreshing) {
+                        if (source != NestedScrollSource.UserInput || isRefreshing) {
                             return androidx.compose.ui.geometry.Offset.Zero
                         }
 
@@ -558,10 +559,10 @@ fun HomeScreen(
                             consumed: Velocity,
                             available: Velocity
                     ): Velocity {
-                        if (!uiState.isRefreshing && pullOffsetPx >= refreshThresholdPx) {
+                        if (!isRefreshing && pullOffsetPx >= refreshThresholdPx) {
                             pullOffsetPx = refreshHoldPx
                             viewModel.refreshPrayerData()
-                        } else if (!uiState.isRefreshing) {
+                        } else if (!isRefreshing) {
                             pullOffsetPx = 0f
                             thresholdReached = false
                         }
@@ -706,8 +707,8 @@ fun HomeScreen(
             KhushuPullRefreshIndicator(
                     // Lock fill at 100% the instant threshold is reached so there's no
                     // dip during the async gap before isRefreshing becomes true.
-                    progress = if (thresholdReached || uiState.isRefreshing) 1f else pullProgress,
-                    isRefreshing = uiState.isRefreshing,
+                    progress = if (thresholdReached || isRefreshing) 1f else pullProgress,
+                    isRefreshing = isRefreshing,
                     darkTheme = darkTheme,
                     modifier =
                             Modifier.align(Alignment.TopCenter)

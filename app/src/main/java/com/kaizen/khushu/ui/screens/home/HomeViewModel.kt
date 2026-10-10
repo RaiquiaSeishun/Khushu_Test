@@ -2,6 +2,7 @@
 
 package com.kaizen.khushu.ui.screens.home
 
+import android.os.SystemClock
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -13,6 +14,7 @@ import com.kaizen.khushu.data.repository.SettingsRepository
 import com.kaizen.khushu.logic.PrayerManager
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -39,16 +41,16 @@ class HomeViewModel(
 
     private val _previewTimeMillis = MutableStateFlow<Long?>(null)
     private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
     private val timeFormatter = SimpleDateFormat("h:mm a", Locale.getDefault())
     
     private var refreshStartedAtMillis = 0L
 
-    private suspend fun completeRefreshWithMinimumDuration() {
-        val remaining = MIN_REFRESH_DURATION_MS - (System.currentTimeMillis() - refreshStartedAtMillis)
+    private suspend fun waitForMinimumRefreshDuration() {
+        val remaining = MIN_REFRESH_DURATION_MS - (SystemClock.elapsedRealtime() - refreshStartedAtMillis)
         if (remaining > 0L) {
             delay(remaining)
         }
-        _isRefreshing.value = false
     }
 
     val uiState: StateFlow<HomeUiState> = combine(
@@ -357,13 +359,20 @@ class HomeViewModel(
 
 
     fun refreshPrayerData() {
-        refreshStartedAtMillis = System.currentTimeMillis()
+        if (_isRefreshing.value) return
+        refreshStartedAtMillis = SystemClock.elapsedRealtime()
         _isRefreshing.value = true
         viewModelScope.launch {
-            prayerTimeRepository.refreshOfficialTimetable(Date(), settingsRepository.settingsFlow.first())
-            settingsRepository.updateLastPrayerRefresh(System.currentTimeMillis())
-            if (uiState.value.calculationSource == CalculationSource.LOCAL && _isRefreshing.value) {
-                completeRefreshWithMinimumDuration()
+            try {
+                prayerTimeRepository.refreshOfficialTimetable(Date(), settingsRepository.settingsFlow.first())
+                settingsRepository.updateLastPrayerRefresh(System.currentTimeMillis())
+            } finally {
+                try {
+                    waitForMinimumRefreshDuration()
+                } finally {
+                    // Also runs if this view model is cleared during the request or delay.
+                    _isRefreshing.value = false
+                }
             }
         }
     }
