@@ -1,5 +1,17 @@
 # Validation evidence
 
+## Quran reader opening and missing verse translations — 0.24.20
+
+The previous update exposed a key-format mismatch: the Quran reader supplied translation keys such as `1`, while the shared renderer now requires `surah:ayah` keys such as `1:1`. The reader now constructs that canonical chapter map once, restoring the selected saved translation beneath each verse without falling back to another edition.
+
+Whole-chapter markup cleanup and block preparation now run in the view model on an IO dispatcher rather than during composition. Entity and whitespace regular expressions are reused, plain text avoids unnecessary markup parsing, and the Quran repository loads the additional Uthmani dataset only if the Tajweed dataset lacks a verse. Tafsir updates enrich visible prepared blocks instead of reparsing a complete chapter. Stable verse keys, cancellation of superseded chapter/script requests and a loaded-chapter guard prevent stale content during navigation; new chapters reset to the top and bookmarked verse positions account for the chapter header.
+
+Local fdroid checks built the app and Android test APK, passed 42 JVM tests with zero failures/errors, and completed lint with zero errors/fatal issues (159 warnings and 8 hints). All five Arabic asset files retain the hashes from the earlier dataset audit. Local evidence: `/workspace/downloads/quran-reader-validation.log`.
+
+[Run 38021338246](https://github.com/RaiquiaSeishun/Khushu_Test/actions/runs/38021338246) passed at application commit `962f96f5f6a4bf4b393e79027bbebd1e3b9ebfb5`: both-distribution build/JVM/lint checks, Android API 30/35 suites, installed-APK data-preserving update checks, retained-key signing and artifact upload. Two new Android regressions exercise the actual reader with saved-edition fixtures through Reading/Verse by Verse switches, edition changes, Show Translation toggles, the 286-verse chapter and navigation to chapter 114, and verify that rapidly superseded view-model loads publish only the final requested chapter. Fixtures exist only in emulator-private test files and are restored afterward. These checks verify display and navigation correctness; physical-phone opening latency and scrolling smoothness still require the checklist in [PHONE_TESTING.md](PHONE_TESTING.md).
+
+[Download the reader correction ZIP](https://github.com/RaiquiaSeishun/Khushu_Test/actions/runs/38021338246/artifacts/11658777734); test version code 100025, production baseline 94 / 0.24.20. Install over the current retained-key Sukun Test app to preserve its settings and downloaded translations. CI evidence: `/workspace/downloads/quran-reader-ci-validation.json`. Documentation-only follow-ups do not change the tested application sources or workflow.
+
 ## Quran formatting, reliable downloads and saved translation picker — 0.24.19
 
 Nested Tajweed tags now render without leaking markup or losing Arabic characters; provider verse-end spans are removed before the app adds its single verse marker. Structured translation footnote markers are omitted from the text-only reader rather than merged into words. Both bundled translations were regenerated from the already-audited provider responses with that formatting correction, and the bundled Urdu attribution now identifies Maulana Muhammad Junagarhi. All five packaged Arabic datasets remain byte-for-byte unchanged.
