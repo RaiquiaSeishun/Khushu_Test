@@ -1,5 +1,17 @@
 # Validation evidence
 
+## Owner-supplied Sukun logo — 0.24.22
+
+The supplied transparent teal arch-and-crescent artwork replaces the interim ring mark in launcher icons, the stable application icon, splash screen, customization previews, app header, pull-to-refresh indicator and notification glyph. The PNG is preserved byte-for-byte in the high-density drawable resource and README image; SHA-256 `4e1f12c46c9bcd63194dda1710c1d495926386e92b80346277e1db4f9e3f7103`. Android scales the drawable for the device density. Adaptive and themed foregrounds use proportional 20% padding; the supplied pixels with alpha at least 16 fit within radius 31.19 in the central 33-unit safe circle of a 108-unit foreground.
+
+Dynamic uses a pale wallpaper accent behind the original teal artwork; Dark and Light retain the artwork on black and white respectively. Islamic Green uses the same silhouette in white, and Android's monochrome layer lets the launcher supply its themed colour. All four saved style values and launcher aliases are retained. The application IDs, signing identity, settings and reading/prayer behavior remain unchanged.
+
+Local fdroid validation built the app and Android test APK, passed 42 JVM tests with zero failures/errors, and completed lint with zero errors/fatal issues (159 warnings and 8 hints). Build and lint were repeated after assigning the supplied asset its density qualifier. Local evidence: `/workspace/downloads/sukun-logo-validation.log`.
+
+[Run 38024647962](https://github.com/RaiquiaSeishun/Khushu_Test/actions/runs/38024647962) passed at application commit `f4282b0e94a59e842c6e19e04a6e7855aab36741`: both-distribution build/JVM/lint checks, Android API 30/35 suites, installed-APK data-preserving update checks, retained-key signing and artifact upload. Existing icon regressions were strengthened to render all four actual alias foregrounds and the stable application icon, verify substantial artwork inside the adaptive safe circle, absence of the old underline, retained colour gradients and the white single-colour layers. API 35 also rendered every themed-icon layer. The original one-launcher, saved-selection, recreation and distinct-style checks remain intact. Physical launcher caching, visual appearance and icon-mask checks remain in [PHONE_TESTING.md](PHONE_TESTING.md).
+
+[Download the logo update ZIP](https://github.com/RaiquiaSeishun/Khushu_Test/actions/runs/38024647962/artifacts/11659477538); test version code 100027, production baseline 96 / 0.24.22. Install over the retained-key Sukun Test app to preserve its data and selected icon style. CI evidence: `/workspace/downloads/sukun-logo-ci-validation.json`. Documentation-only follow-ups do not change the tested application sources or workflow.
+
 ## Home refresh completion — 0.24.21
 
 Home previously cleared its refreshing flag only when the calculation source was LOCAL, leaving JAKIM refreshes active after their requests had finished. Refresh now releases that flag in unconditional finally cleanup, including failure and cancellation paths. The existing 700 ms minimum animation uses monotonic elapsed time. Pulls while a refresh is active are ignored, and a later pull is accepted after completion. Home observes the read-only refresh state directly, so timetable calculations do not delay the indicator or gesture state.
