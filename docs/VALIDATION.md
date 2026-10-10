@@ -1,5 +1,15 @@
 # Validation evidence
 
+## Qibla bearing, declination and north marker — 0.24.18
+
+The initial great-circle bearing now includes the destination latitude cosine in its east component. Rotation-vector magnetic heading is corrected to true heading with Android GeomagneticField at the current coordinates and date (sea-level altitude because saved settings contain no elevation). Sensor axes are remapped for screen rotation. The Qibla needle, north tick and upright N label use the same true-north frame; N moves opposite the phone heading. The label uses absolute layout positioning so displayed and accessibility positions agree in both LTR and RTL interfaces. Without a heading, directional markers are hidden while the numeric bearing and explanation remain. Home layout, prayer-time sources, icon customization and signing identity are unchanged.
+
+Local fdroid validation built the app and Android test APK, passed 36 JVM tests with 0 failures/errors/skips and completed lint with 0 errors/fatal issues (159 existing warnings). Four new mathematical regressions compare five locations against an independent 3D-vector spherical reference, verify same-meridian directions, declination sign and wraparound, and the shared north/Qibla frame. Local evidence: `/workspace/downloads/qibla-direction-validation.log`.
+
+The initial CI [run 38017165895](https://github.com/RaiquiaSeishun/Khushu_Test/actions/runs/38017165895) exposed that drawing-only translation left the north label's reported bounds at the dial centre. The correction uses absolute layout positioning and retains the directional assertions, extending them to LTR and RTL. Final [run 38017844751](https://github.com/RaiquiaSeishun/Khushu_Test/actions/runs/38017844751) passed at application commit `dcb7cb2eb0648335c38e82a884e9ef85844ebce3`: both-distribution build/JVM/lint checks, Android API 30/35 tests (including rendered north positions at four injected headings and absence without a heading), data-preserving update checks, retained-key signing and artifact upload. [Download the Qibla correction ZIP](https://github.com/RaiquiaSeishun/Khushu_Test/actions/runs/38017844751/artifacts/11657331122); test version code 100023, production baseline 92 / 0.24.18. Install over the current retained-key Sukun Test app. CI evidence: `/workspace/downloads/qibla-direction-ci-validation.json`.
+
+These checks establish the mathematical correction and rendered dial behaviour, not physical sensor calibration or real-phone directional accuracy. Follow the Qibla comparison and portrait/landscape checks in [PHONE_TESTING.md](PHONE_TESTING.md).
+
 ## Remove Mosques and Events shortcuts — 0.24.17
 
 Explore now contains only Qibla, retaining its original tile width and bottom-left position beneath the prayer list. The unused Mosque placeholder and Events shortcut actions have been removed. Upcoming dates, the compact JAKIM notice and the rest of Home retain their existing layout.
