@@ -4,6 +4,7 @@ package com.kaizen.khushu.ui.screens.home
 
 import android.content.Context
 import android.content.Intent
+import android.hardware.GeomagneticField
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
@@ -38,7 +39,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BasicAlertDialog
@@ -65,7 +65,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
@@ -88,6 +87,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kaizen.khushu.R
+import com.kaizen.khushu.logic.QiblaDirection
 import com.kaizen.khushu.ui.components.KhushuAppBar
 import com.kaizen.khushu.ui.theme.BeVietnamPro
 import dev.chrisbanes.haze.HazeState
@@ -96,11 +96,7 @@ import java.util.Date
 import java.util.Locale
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
-import kotlin.math.atan2
-import kotlin.math.cos
 import kotlin.math.roundToInt
-import kotlin.math.sin
-import kotlin.math.min
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -133,20 +129,6 @@ private fun emptyPrayerDoneStates(prayers: List<PrayerInfo>): Map<String, Boolea
     return names.associateWith { false }
 }
 
-private const val KAABA_LATITUDE = 21.4225
-private const val KAABA_LONGITUDE = 39.8262
-
-private fun qiblaBearingDegrees(latitude: Double, longitude: Double): Double {
-    val latRad = Math.toRadians(latitude)
-    val lngRad = Math.toRadians(longitude)
-    val kaabaLatRad = Math.toRadians(KAABA_LATITUDE)
-    val kaabaLngRad = Math.toRadians(KAABA_LONGITUDE)
-    val deltaLng = kaabaLngRad - lngRad
-    val y = sin(deltaLng)
-    val x = cos(latRad) * sin(kaabaLatRad) - sin(latRad) * cos(kaabaLatRad) * cos(deltaLng)
-    return (Math.toDegrees(atan2(y, x)) + 360.0) % 360.0
-}
-
 private fun compassPointLabel(bearing: Double): String {
     val points = listOf("N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW")
     val index = (((bearing + 11.25) % 360) / 22.5).toInt()
@@ -154,12 +136,16 @@ private fun compassPointLabel(bearing: Double): String {
 }
 
 @Composable
-private fun rememberDeviceHeading(): Float? {
+private fun rememberDeviceHeading(latitude: Float, longitude: Float): Float? {
     val context = LocalContext.current
     val sensorManager = remember {
         context.getSystemService(Context.SENSOR_SERVICE) as? SensorManager
     }
     val headingState = remember { mutableStateOf<Float?>(null) }
+    val declination = remember(latitude, longitude) {
+        // Location settings store no elevation; sea-level altitude is sufficient for this compass.
+        GeomagneticField(latitude, longitude, 0f, System.currentTimeMillis()).declination
+    }
 
     DisposableEffect(sensorManager) {
         val manager = sensorManager
@@ -168,11 +154,19 @@ private fun rememberDeviceHeading(): Float? {
             onDispose { }
         } else {
             val rotationMatrix = FloatArray(9)
+            val displayMatrix = FloatArray(9)
             val orientation = FloatArray(3)
             val listener = object : SensorEventListener {
                 override fun onSensorChanged(event: SensorEvent) {
                     SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values)
-                    SensorManager.getOrientation(rotationMatrix, orientation)
+                    val (xAxis, yAxis) = when (context.display?.rotation) {
+                        android.view.Surface.ROTATION_90 -> SensorManager.AXIS_Y to SensorManager.AXIS_MINUS_X
+                        android.view.Surface.ROTATION_180 -> SensorManager.AXIS_MINUS_X to SensorManager.AXIS_MINUS_Y
+                        android.view.Surface.ROTATION_270 -> SensorManager.AXIS_MINUS_Y to SensorManager.AXIS_X
+                        else -> SensorManager.AXIS_X to SensorManager.AXIS_Y
+                    }
+                    SensorManager.remapCoordinateSystem(rotationMatrix, xAxis, yAxis, displayMatrix)
+                    SensorManager.getOrientation(displayMatrix, orientation)
                     val azimuthDeg = Math.toDegrees(orientation[0].toDouble()).toFloat()
                     headingState.value = (azimuthDeg + 360f) % 360f
                 }
@@ -184,7 +178,9 @@ private fun rememberDeviceHeading(): Float? {
         }
     }
 
-    return headingState.value
+    return headingState.value?.let {
+        QiblaDirection.trueHeadingDegrees(it.toDouble(), declination.toDouble()).toFloat()
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -196,11 +192,7 @@ private fun QiblaCompassDialog(
     longitude: Float,
     onDismiss: () -> Unit,
 ) {
-    val heading = rememberDeviceHeading()
-    val relativeBearing = heading?.let { ((bearingDegrees - it + 360.0) % 360.0).toFloat() }
-    val ringColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f)
-    val northTickColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f)
-    val needleColor = MaterialTheme.colorScheme.primary
+    val heading = rememberDeviceHeading(latitude, longitude)
     BasicAlertDialog(onDismissRequest = onDismiss) {
         Surface(
             shape = RoundedCornerShape(28.dp),
@@ -224,50 +216,7 @@ private fun QiblaCompassDialog(
                     modifier = Modifier.padding(top = 4.dp)
                 )
                 Spacer(modifier = Modifier.height(18.dp))
-                Box(contentAlignment = Alignment.Center) {
-                    Canvas(modifier = Modifier.size(220.dp)) {
-                        val stroke = 8.dp.toPx()
-                        val radius = min(size.width, size.height) / 2f - stroke
-                        drawCircle(
-                            color = ringColor,
-                            radius = radius,
-                            style = androidx.compose.ui.graphics.drawscope.Stroke(width = stroke)
-                        )
-                        drawLine(
-                            color = northTickColor,
-                            start = center.copy(y = center.y - radius),
-                            end = center.copy(y = center.y - radius + 22.dp.toPx()),
-                            strokeWidth = 3.dp.toPx(),
-                            cap = StrokeCap.Round
-                        )
-                        drawLine(
-                            color = needleColor,
-                            start = center,
-                            end = androidx.compose.ui.geometry.Offset(
-                                x = center.x + sin(Math.toRadians((relativeBearing ?: 0f).toDouble())).toFloat() * radius * 0.78f,
-                                y = center.y - cos(Math.toRadians((relativeBearing ?: 0f).toDouble())).toFloat() * radius * 0.78f
-                            ),
-                            strokeWidth = 6.dp.toPx(),
-                            cap = StrokeCap.Round
-                        )
-                        drawCircle(
-                            color = needleColor,
-                            radius = 7.dp.toPx(),
-                            center = center
-                        )
-                    }
-                    Text(
-                        text = "N",
-                        style = MaterialTheme.typography.labelLarge.copy(
-                            fontFamily = BeVietnamPro,
-                            fontWeight = FontWeight.Bold
-                        ),
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f),
-                        modifier = Modifier
-                            .align(Alignment.TopCenter)
-                            .padding(top = 18.dp)
-                    )
-                }
+                QiblaCompassDial(bearingDegrees = bearingDegrees, trueHeading = heading)
                 Spacer(modifier = Modifier.height(14.dp))
                 Text(
                     text = "${bearingDegrees.roundToInt()}° ${compassPointLabel(bearingDegrees)} to Makkah",
@@ -276,8 +225,8 @@ private fun QiblaCompassDialog(
                     textAlign = TextAlign.Center
                 )
                 Text(
-                    text = heading?.let { "Facing ${it.roundToInt()}° now" }
-                        ?: "Compass sensor unavailable on this device",
+                    text = heading?.let { "Facing ${it.roundToInt() % 360}° from true north" }
+                        ?: "Compass heading unavailable. Use the bearing with a trusted compass.",
                     style = MaterialTheme.typography.bodySmall.copy(fontFamily = BeVietnamPro),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -511,7 +460,7 @@ fun HomeScreen(
     val displayEventsHeader = uiState.eventsHeader.ifBlank { cachedEventsHeader }
     val hijriBadge = remember(displayHijriDate) { splitHijriBadgeParts(displayHijriDate) }
     val qiblaBearing = remember(uiState.locationLat, uiState.locationLng) {
-        qiblaBearingDegrees(uiState.locationLat.toDouble(), uiState.locationLng.toDouble())
+        QiblaDirection.bearingDegrees(uiState.locationLat.toDouble(), uiState.locationLng.toDouble())
     }
 
     val currentPrayer = findCurrentPrayer(displayPrayers, currentTimeMillis)

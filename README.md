@@ -22,6 +22,8 @@ Sign in to GitHub, open a successful [Sukun checks run](https://github.com/Raiqu
 
 ## Home
 
+The Qibla compass uses the corrected great-circle bearing and a heading corrected for magnetic declination. Its north marker moves with the phone; direction markers are hidden when no heading is available. Physical compass accuracy still depends on the phone sensors and nearby magnetic interference.
+
 Home retains its prayer card, source notice, upcoming events and daily prayer list. Explore contains only Qibla; the Mosques and Events shortcuts have been removed. Qibla stays beneath the prayer list and is always shown, without a scroll-triggered reveal. Official JAKIM source information uses a compact row with separate Details. Guided Prayer and its editor have been removed; daily prayer tracking, Tasbih and Study remain available. A saved Pray startup choice opens Home after updating.
 
 ## Development
