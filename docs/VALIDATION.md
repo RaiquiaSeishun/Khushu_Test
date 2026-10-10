@@ -1,5 +1,15 @@
 # Validation evidence
 
+## Home refresh completion — 0.24.21
+
+Home previously cleared its refreshing flag only when the calculation source was LOCAL, leaving JAKIM refreshes active after their requests had finished. Refresh now releases that flag in unconditional finally cleanup, including failure and cancellation paths. The existing 700 ms minimum animation uses monotonic elapsed time. Pulls while a refresh is active are ignored, and a later pull is accepted after completion. Home observes the read-only refresh state directly, so timetable calculations do not delay the indicator or gesture state.
+
+Local fdroid checks built the app and Android test APK, passed 42 JVM tests with zero failures/errors, and completed lint with zero errors/fatal issues (159 warnings and 8 hints). Local evidence: `/workspace/downloads/home-refresh-validation.log`.
+
+[Run 38022858783](https://github.com/RaiquiaSeishun/Khushu_Test/actions/runs/38022858783) passed at application commit `076043694209d40b817a5791fb398979f1cefad1`: both-distribution build/JVM/lint checks, Android API 30/35 suites, installed-APK data-preserving update checks, retained-key signing and artifact upload. Two new Android regressions exercise the real Home view model with JAKIM selected and a subscribed Home state. Controlled responses verify successful completion, duplicate-pull rejection while a request is held, acceptance of a subsequent refresh, and indicator completion with unchanged cached prayer times after an HTTP 503 response. Synthetic timetables stay in repository memory, and test settings are restored afterward. Physical gesture checks remain in [PHONE_TESTING.md](PHONE_TESTING.md).
+
+[Download the refresh correction ZIP](https://github.com/RaiquiaSeishun/Khushu_Test/actions/runs/38022858783/artifacts/11658874808); test version code 100026, production baseline 95 / 0.24.21. Install over the current retained-key Sukun Test app to preserve settings and downloaded translations. CI evidence: `/workspace/downloads/home-refresh-ci-validation.json`. Documentation-only follow-ups do not change the tested application sources or workflow.
+
 ## Quran reader opening and missing verse translations — 0.24.20
 
 The previous update exposed a key-format mismatch: the Quran reader supplied translation keys such as `1`, while the shared renderer now requires `surah:ayah` keys such as `1:1`. The reader now constructs that canonical chapter map once, restoring the selected saved translation beneath each verse without falling back to another edition.
